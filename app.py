@@ -154,7 +154,7 @@ def send_to_ai_agent(webhook_url, message, session_id=None, context=None):
         payload = {
             "message": message,
             "timestamp": datetime.now().isoformat(),
-            "session_id": session_id or st.session_state.get('session_id', 'default'),
+            "SessionId": session_id or st.session_state.get('SessionId', 'default'),
         }
         
         # เพิ่ม context ถ้ามี (ประวัติการสนทนา, database schema, etc.)
@@ -298,8 +298,8 @@ def export_chat_history(messages):
 if 'messages' not in st.session_state:
     st.session_state.messages = []
 
-if 'session_id' not in st.session_state:
-    st.session_state.session_id = f"session_{int(time.time())}"
+if 'SessionId' not in st.session_state:
+    st.session_state.SessionId = f"session_{int(time.time())}"
 
 if 'webhook_url' not in st.session_state:
     st.session_state.webhook_url = ""
@@ -375,14 +375,14 @@ with st.sidebar:
     
     st.text_input(
         "Session ID",
-        value=st.session_state.session_id,
+        value=st.session_state.SessionId,
         disabled=True
     )
     
     col1, col2 = st.columns(2)
     with col1:
         if st.button("🔄 New Session", use_container_width=True):
-            st.session_state.session_id = f"session_{int(time.time())}"
+            st.session_state.SessionId = f"session_{int(time.time())}"
             st.session_state.messages = []
             st.session_state.total_requests = 0
             st.session_state.successful_requests = 0
@@ -419,7 +419,7 @@ with st.sidebar:
         st.download_button(
             label="📥 Download History (CSV)",
             data=csv_data,
-            file_name=f"ai_agent_chat_{st.session_state.session_id}.csv",
+            file_name=f"ai_agent_chat_{st.session_state.SessionId}.csv",
             mime="text/csv",
             use_container_width=True
         )
@@ -537,7 +537,7 @@ if send_button and user_input.strip():
         response = send_to_ai_agent(
             st.session_state.webhook_url,
             user_input,
-            st.session_state.session_id,
+            st.session_state.SessionId,
             st.session_state.database_context
         )
         
