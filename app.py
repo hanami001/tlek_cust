@@ -185,7 +185,7 @@ def send_to_ai_agent(webhook_url, message, session_id=None, context=None):
         
         if response.status_code == 200:
             try:
-                data = response.json() if response.text else {'message': 'Success'}
+                data = response.json() if response.text else {'message': 'Error (Timeout), Please Try Again'}
             except json.JSONDecodeError:
                 data = {'message': response.text}
             
