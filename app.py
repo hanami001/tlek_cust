@@ -6,6 +6,7 @@ import time
 import pandas as pd
 from io import StringIO
 import base64
+import re
 
 # ตั้งค่าหน้าเว็บ
 st.set_page_config(
@@ -144,11 +145,16 @@ st.markdown("""
     /* Message Content */
     .message-content {
         font-size: 1.05rem;
-        line-height: 1.7;
-        white-space: pre-wrap;
+        line-height: 1.5;
+        white-space: pre-line;
         word-wrap: break-word;
         color: #2d3748;
         font-weight: 400;
+    }
+    
+    .message-content p {
+        margin: 0.3rem 0 !important;
+        line-height: 1.5 !important;
     }
     
     .user-message .message-content {
@@ -199,6 +205,23 @@ st.markdown("""
     section[data-testid="stSidebar"] h3 {
         color: #2d3748 !important;
         font-weight: 600 !important;
+    }
+    
+    /* Fix Label และ Input ไม่ให้ซ้อนกัน */
+    .stTextInput > label,
+    .stTextArea > label,
+    .stSelectbox > label {
+        display: block !important;
+        margin-bottom: 0.5rem !important;
+        font-weight: 500 !important;
+        color: #2d3748 !important;
+    }
+    
+    /* Fix Input Field Position */
+    .stTextInput > div,
+    .stTextArea > div,
+    .stSelectbox > div {
+        margin-top: 0 !important;
     }
     
     /* Buttons */
@@ -510,6 +533,10 @@ def display_message(role, content, timestamp, metadata=None):
             meta_text += " • 🔍 SQL Query"
         if metadata.get('has_data'):
             meta_text += " • 📊 Data"
+    
+    # ลดระยะห่างระหว่างบรรทัด - แทนที่ newline หลายตัวด้วยตัวเดียว
+    import re
+    content = re.sub(r'\n{3,}', '\n\n', content)  # แทนที่ newline 3 ตัวขึ้นไปด้วย 2 ตัว
     
     # Escape HTML in content
     safe_content = content.replace('<', '&lt;').replace('>', '&gt;')
