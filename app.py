@@ -509,14 +509,24 @@ def display_data_table(data):
             # Body rows
             html_table += '<tbody>'
             for idx, row in df.iterrows():
-                row_style = 'background: #f9fafb;' if idx % 2 == 1 else 'background: white;'
-                html_table += f'<tr style="{row_style}" onmouseover="this.style.background=\'#e5e7eb\'" onmouseout="this.style.background=\'{row_style.split(\':\')[1].strip()[:-1]}\'">'
+                bg_color = '#f9fafb' if idx % 2 == 1 else 'white'
+                html_table += f'<tr style="background: {bg_color};">'
                 for val in row:
                     # จัดการค่า None/NaN
                     display_val = str(val) if pd.notna(val) else '-'
                     html_table += f'<td style="padding: 0.75rem; border-bottom: 1px solid #e5e7eb; font-family: \'Noto Sans Thai\', sans-serif;">{display_val}</td>'
                 html_table += '</tr>'
             html_table += '</tbody></table>'
+            
+            # เพิ่ม CSS สำหรับ hover effect
+            st.markdown("""
+            <style>
+            table tbody tr:hover {
+                background: #e5e7eb !important;
+                transition: background 0.2s ease;
+            }
+            </style>
+            """, unsafe_allow_html=True)
             
             # แสดง HTML table
             st.markdown(html_table, unsafe_allow_html=True)
