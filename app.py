@@ -16,21 +16,20 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS ที่ปรับปรุงแล้ว - เพิ่ม Noto Sans Thai และ Modern UI/UX
+# CSS ที่ปรับปรุงแล้ว พร้อม Noto Sans Thai และ UI ที่สวยงามขึ้น
 st.markdown("""
 <style>
-    /* Import Noto Sans Thai from Google Fonts */
+    /* Import Noto Sans Thai */
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap');
     
     /* Global Font */
     * {
-        font-family: 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+        font-family: 'Noto Sans Thai', sans-serif !important;
     }
     
-    /* Hide Streamlit Elements */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
+    .stTextArea textarea, .stTextInput input, .stSelectbox select {
+        font-family: 'Noto Sans Thai', sans-serif !important;
+    }
     
     /* Custom Scrollbar */
     ::-webkit-scrollbar {
@@ -44,94 +43,55 @@ st.markdown("""
     }
     
     ::-webkit-scrollbar-thumb {
-        background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+        background: #888;
         border-radius: 10px;
     }
     
     ::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(180deg, #764ba2 0%, #667eea 100%);
+        background: #555;
     }
     
-    /* Main Container Styling */
-    .main {
-        background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
-    }
-    
-    /* Title Styling */
-    h1 {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-weight: 700 !important;
-        letter-spacing: -0.5px;
-        margin-bottom: 0.5rem !important;
-    }
-    
-    /* Chat Message Containers */
+    /* Chat Message Styling */
     .chat-message {
-        padding: 1.5rem;
+        padding: 1.2rem 1.5rem;
         border-radius: 1rem;
-        margin-bottom: 1.5rem;
+        margin-bottom: 1rem;
         display: flex;
         flex-direction: column;
-        animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        animation: fadeIn 0.3s ease-in;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         transition: transform 0.2s ease, box-shadow 0.2s ease;
-        border: 1px solid rgba(255,255,255,0.3);
     }
     
     .chat-message:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
     }
     
-    @keyframes slideIn {
-        from { 
-            opacity: 0; 
-            transform: translateY(20px) scale(0.95);
-        }
-        to { 
-            opacity: 1; 
-            transform: translateY(0) scale(1);
-        }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
     }
     
-    /* User Message */
     .user-message {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         margin-left: 10%;
-        position: relative;
-        overflow: hidden;
     }
     
-    .user-message::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        right: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(45deg, transparent 0%, rgba(255,255,255,0.1) 100%);
-        pointer-events: none;
-    }
-    
-    /* Bot Message */
     .bot-message {
-        background: white;
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
         margin-right: 10%;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+        border: 1px solid #e9ecef;
     }
     
-    /* Message Header */
     .message-header {
         font-weight: 600;
         margin-bottom: 0.75rem;
-        font-size: 0.95rem;
+        font-size: 0.9rem;
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        letter-spacing: 0.3px;
     }
     
     .user-message .message-header {
@@ -139,257 +99,152 @@ st.markdown("""
     }
     
     .bot-message .message-header {
-        color: #2d3748;
+        color: #1a202c;
     }
     
-    /* Message Content */
+    /* แก้ไขปัญหาการเว้นบรรทัดมากเกินไป */
     .message-content {
-        font-size: 1.05rem;
-        line-height: 1.5;
-        white-space: pre-line;
+        font-size: 1rem;
+        line-height: 1.7;
         word-wrap: break-word;
         color: #2d3748;
-        font-weight: 400;
     }
     
+    /* ลบช่องว่างที่มากเกินไป */
     .message-content p {
-        margin: 0.3rem 0 !important;
-        line-height: 1.5 !important;
+        margin: 0.5rem 0 !important;
+    }
+    
+    .message-content br + br {
+        display: none;
     }
     
     .user-message .message-content {
         color: white;
     }
     
-    /* Timestamp */
     .timestamp {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         margin-top: 0.75rem;
-        opacity: 0.7;
+        opacity: 0.75;
         font-weight: 400;
     }
     
     /* Badges */
-    .query-badge {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        color: white;
-        padding: 0.35rem 0.85rem;
-        border-radius: 2rem;
-        font-size: 0.8rem;
+    .query-badge, .data-badge {
+        padding: 0.3rem 0.8rem;
+        border-radius: 1.5rem;
+        font-size: 0.75rem;
         display: inline-block;
         margin-top: 0.5rem;
         font-weight: 500;
-        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    }
+    
+    .query-badge {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
     }
     
     .data-badge {
         background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         color: white;
-        padding: 0.35rem 0.85rem;
-        border-radius: 2rem;
-        font-size: 0.8rem;
-        display: inline-block;
-        margin-top: 0.5rem;
+        box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+    }
+    
+    /* DataFrame Styling */
+    .stDataFrame {
+        margin: 1rem 0;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    
+    /* Code Block Styling */
+    .stCodeBlock {
+        border-radius: 0.5rem;
+        margin: 1rem 0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    
+    /* Button Improvements */
+    .stButton > button {
+        border-radius: 0.5rem;
         font-weight: 500;
-        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        transition: all 0.2s ease;
     }
     
-    /* Sidebar Styling */
-    section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
-        border-right: 1px solid rgba(102, 126, 234, 0.1);
+    .stButton > button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
     }
     
-    section[data-testid="stSidebar"] h1,
-    section[data-testid="stSidebar"] h2,
-    section[data-testid="stSidebar"] h3 {
-        color: #2d3748 !important;
-        font-weight: 600 !important;
-    }
-    
-    /* Fix Label และ Input ไม่ให้ซ้อนกัน */
-    .stTextInput > label,
-    .stTextArea > label,
-    .stSelectbox > label {
-        display: block !important;
-        margin-bottom: 0.5rem !important;
-        font-weight: 500 !important;
-        color: #2d3748 !important;
-    }
-    
-    /* Fix Input Field Position */
-    .stTextInput > div,
-    .stTextArea > div,
-    .stSelectbox > div {
-        margin-top: 0 !important;
-    }
-    
-    /* Buttons */
-    .stButton button {
-        border-radius: 0.75rem;
-        font-weight: 500;
-        transition: all 0.3s ease;
-        border: none;
-        font-family: 'Noto Sans Thai', sans-serif !important;
-    }
-    
-    .stButton button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
-    }
-    
-    /* Primary Button */
-    .stButton button[kind="primary"] {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-    
-    /* Text Input & Text Area */
-    .stTextInput input,
+    /* Form Styling */
     .stTextArea textarea {
         border-radius: 0.75rem;
         border: 2px solid #e2e8f0;
-        font-family: 'Noto Sans Thai', sans-serif !important;
-        transition: all 0.3s ease;
+        font-size: 1rem;
+        transition: border-color 0.2s ease;
     }
     
-    .stTextInput input:focus,
     .stTextArea textarea:focus {
         border-color: #667eea;
         box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
     
-    /* Select Box */
-    .stSelectbox select {
-        border-radius: 0.75rem;
-        border: 2px solid #e2e8f0;
-        font-family: 'Noto Sans Thai', sans-serif !important;
+    /* Sidebar Improvements */
+    .css-1d391kg {
+        background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
     }
     
-    /* Metrics */
-    [data-testid="stMetricValue"] {
-        font-size: 1.75rem !important;
-        font-weight: 700 !important;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+    /* Metric Card Styling */
+    .stMetric {
+        background: white;
+        padding: 1rem;
+        border-radius: 0.75rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
     
     /* Info/Warning/Success Boxes */
     .stAlert {
         border-radius: 0.75rem;
+        border-left: 4px solid;
+        font-weight: 400;
+    }
+    
+    /* Hide Streamlit Branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    
+    /* Divider */
+    hr {
+        margin: 1.5rem 0;
         border: none;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        font-family: 'Noto Sans Thai', sans-serif !important;
-    }
-    
-    /* Code Block */
-    .stCodeBlock {
-        border-radius: 0.75rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        font-family: 'Noto Sans Thai', 'Consolas', 'Monaco', monospace !important;
-    }
-    
-    /* DataFrame */
-    .stDataFrame {
-        margin-top: 1rem;
-        border-radius: 0.75rem;
-        overflow: hidden;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    }
-    
-    /* Expander */
-    .streamlit-expanderHeader {
-        font-weight: 600;
-        border-radius: 0.75rem;
-        background: white;
-        font-family: 'Noto Sans Thai', sans-serif !important;
-    }
-    
-    /* Download Button */
-    .stDownloadButton button {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        color: white;
-    }
-    
-    /* Form Container */
-    .stForm {
-        background: white;
-        padding: 1.5rem;
-        border-radius: 1rem;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        border: 1px solid rgba(102, 126, 234, 0.1);
-    }
-    
-    /* Welcome Card */
-    .welcome-card {
-        background: white;
-        padding: 2rem;
-        border-radius: 1rem;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
-        border-left: 4px solid #667eea;
-        margin-bottom: 2rem;
-    }
-    
-    .welcome-card h4 {
-        color: #667eea;
-        font-weight: 600;
-        margin-bottom: 1rem;
-    }
-    
-    .welcome-card ul {
-        list-style: none;
-        padding-left: 0;
-    }
-    
-    .welcome-card li {
-        padding: 0.5rem 0;
-        color: #4a5568;
-    }
-    
-    /* Footer */
-    .footer {
-        text-align: center;
-        color: #718096;
-        padding: 2rem 1rem;
-        background: white;
-        border-radius: 1rem;
-        margin-top: 2rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }
-    
-    .footer strong {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-weight: 600;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Initialize Session State
-if 'messages' not in st.session_state:
-    st.session_state.messages = []
-
-if 'SessionId' not in st.session_state:
-    st.session_state.SessionId = f"session_{int(time.time())}"
-
-if 'webhook_url' not in st.session_state:
-    st.session_state.webhook_url = ""
-
-if 'is_processing' not in st.session_state:
-    st.session_state.is_processing = False
-
-if 'total_requests' not in st.session_state:
-    st.session_state.total_requests = 0
-
-if 'successful_requests' not in st.session_state:
-    st.session_state.successful_requests = 0
-
-if 'total_queries' not in st.session_state:
-    st.session_state.total_queries = 0
-
-if 'database_context' not in st.session_state:
-    st.session_state.database_context = {}
+# ฟังก์ชันทำความสะอาดข้อความ (ลบบรรทัดว่างที่มากเกินไป)
+def clean_text_spacing(text):
+    """
+    ทำความสะอาดข้อความโดยลดการเว้นบรรทัดที่มากเกินไป
+    """
+    if not text:
+        return text
+    
+    # แทนที่บรรทัดว่างมากกว่า 2 บรรทัด ด้วย 1 บรรทัด
+    text = re.sub(r'\n\s*\n\s*\n+', '\n\n', text)
+    
+    # ลบช่องว่างที่ตอนท้ายและต้นของแต่ละบรรทัด
+    lines = [line.rstrip() for line in text.split('\n')]
+    text = '\n'.join(lines)
+    
+    # ลบช่องว่างที่ตอนต้นและท้ายของข้อความทั้งหมด
+    text = text.strip()
+    
+    return text
 
 # ฟังก์ชันสำหรับ parse response จาก AI Agent
 def parse_agent_response(response_data):
@@ -404,7 +259,7 @@ def parse_agent_response(response_data):
     }
     
     if isinstance(response_data, str):
-        parsed['text'] = response_data
+        parsed['text'] = clean_text_spacing(response_data)
         return parsed
     
     if isinstance(response_data, dict):
@@ -413,7 +268,7 @@ def parse_agent_response(response_data):
         
         for key in text_keys:
             if key in response_data:
-                parsed['text'] = str(response_data[key])
+                parsed['text'] = clean_text_spacing(str(response_data[key]))
                 break
         
         # ดึง SQL query (ถ้ามี)
@@ -471,13 +326,13 @@ def send_to_ai_agent(webhook_url, message, session_id=None, context=None):
             "Content-Type": "application/json"
         }
         
-        with st.spinner('🤖 AI Agent กำลังประมวลผล...'):
+        with st.spinner('🤖 AI Agent กำลังคิด...'):
             start_time = time.time()
             response = requests.post(
                 webhook_url,
                 json=payload,
                 headers=headers,
-                timeout=60
+                timeout=60  # เพิ่ม timeout สำหรับ database queries
             )
             response_time = time.time() - start_time
         
@@ -521,7 +376,7 @@ def send_to_ai_agent(webhook_url, message, session_id=None, context=None):
 def display_message(role, content, timestamp, metadata=None):
     """แสดงข้อความรวมถึง SQL queries และ data tables"""
     message_class = "user-message" if role == "user" else "bot-message"
-    role_name = "คุณ" if role == "user" else "AI Agent"
+    role_name = "คุณ" if role == "user" else "🤖 AI Agent"
     icon = "👤" if role == "user" else "🤖"
     
     # เตรียม metadata text
@@ -534,12 +389,11 @@ def display_message(role, content, timestamp, metadata=None):
         if metadata.get('has_data'):
             meta_text += " • 📊 Data"
     
-    # ลดระยะห่างระหว่างบรรทัด - แทนที่ newline หลายตัวด้วยตัวเดียว
-    import re
-    content = re.sub(r'\n{3,}', '\n\n', content)  # แทนที่ newline 3 ตัวขึ้นไปด้วย 2 ตัว
+    # ทำความสะอาดเนื้อหาก่อนแสดงผล
+    clean_content = clean_text_spacing(content)
     
-    # Escape HTML in content
-    safe_content = content.replace('<', '&lt;').replace('>', '&gt;')
+    # แปลง newlines เป็น <br> สำหรับ HTML
+    html_content = clean_content.replace('\n', '<br>')
     
     st.markdown(f"""
     <div class="chat-message {message_class}">
@@ -547,7 +401,7 @@ def display_message(role, content, timestamp, metadata=None):
             <span>{icon}</span>
             <span>{role_name}</span>
         </div>
-        <div class="message-content">{safe_content}</div>
+        <div class="message-content">{html_content}</div>
         <div class="timestamp">{timestamp}{meta_text}</div>
     </div>
     """, unsafe_allow_html=True)
@@ -560,7 +414,7 @@ def display_sql_query(query):
 
 # ฟังก์ชันแสดงข้อมูลในรูปแบบ DataFrame
 def display_data_table(data):
-    """แสดงข้อมูลในรูปแบบ DataFrame"""
+    """แสดงข้อมูลในรูปแบบตาราง"""
     try:
         if isinstance(data, list):
             if len(data) > 0:
@@ -571,17 +425,9 @@ def display_data_table(data):
                     use_container_width=True,
                     hide_index=True
                 )
-                
-                # แสดงสถิติพื้นฐาน
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    st.metric("จำนวนแถว", len(df))
-                with col2:
-                    st.metric("จำนวนคอลัมน์", len(df.columns))
-                with col3:
-                    st.metric("ขนาดข้อมูล", f"{df.memory_usage(deep=True).sum() / 1024:.1f} KB")
+                st.caption(f"จำนวนแถว: {len(df)} แถว")
             else:
-                st.info("📭 ไม่พบข้อมูล")
+                st.info("ไม่พบข้อมูล")
         elif isinstance(data, dict):
             df = pd.DataFrame([data])
             st.markdown("**📊 ผลลัพธ์:**")
@@ -591,50 +437,76 @@ def display_data_table(data):
                 hide_index=True
             )
         else:
-            st.warning("⚠️ รูปแบบข้อมูลไม่รองรับ")
+            st.info(f"ข้อมูล: {data}")
     except Exception as e:
-        st.error(f"❌ ไม่สามารถแสดงข้อมูล: {str(e)}")
+        st.error(f"ไม่สามารถแสดงข้อมูลได้: {str(e)}")
+        st.json(data)
 
 # ฟังก์ชัน Export Chat History
 def export_chat_history(messages):
     """Export ประวัติการสนทนาเป็น CSV"""
-    try:
-        data = []
-        for msg in messages:
-            data.append({
-                'Timestamp': msg['timestamp'],
-                'Role': msg['role'],
-                'Content': msg['content'],
-                'SQL_Query': msg.get('sql_query', ''),
-                'Has_Data': 'Yes' if msg.get('data') else 'No'
-            })
-        
-        df = pd.DataFrame(data)
-        return df.to_csv(index=False, encoding='utf-8-sig')
-    except Exception as e:
-        return f"Error: {str(e)}"
+    data = []
+    for msg in messages:
+        row = {
+            'Timestamp': msg['timestamp'],
+            'Role': msg['role'],
+            'Content': msg['content'],
+            'SQL_Query': msg.get('sql_query', ''),
+            'Has_Data': 'Yes' if msg.get('data') else 'No'
+        }
+        data.append(row)
+    
+    df = pd.DataFrame(data)
+    return df.to_csv(index=False).encode('utf-8-sig')
+
+# Initialize Session State
+if 'messages' not in st.session_state:
+    st.session_state.messages = []
+
+if 'webhook_url' not in st.session_state:
+    st.session_state.webhook_url = ""
+
+if 'SessionId' not in st.session_state:
+    st.session_state.SessionId = f"session_{int(time.time())}"
+
+if 'total_requests' not in st.session_state:
+    st.session_state.total_requests = 0
+
+if 'successful_requests' not in st.session_state:
+    st.session_state.successful_requests = 0
+
+if 'total_queries' not in st.session_state:
+    st.session_state.total_queries = 0
+
+if 'is_processing' not in st.session_state:
+    st.session_state.is_processing = False
+
+if 'database_context' not in st.session_state:
+    st.session_state.database_context = {}
 
 # Sidebar
 with st.sidebar:
-    st.markdown("### ⚙️ การตั้งค่า")
+    st.markdown("## ⚙️ การตั้งค่า")
     
-    # Webhook URL
+    # N8N Webhook URL
     webhook_url = st.text_input(
         "N8N Webhook URL",
         value=st.session_state.webhook_url,
-        placeholder="https://your-n8n-instance.com/webhook/...",
-        help="URL ของ N8N Webhook ที่เชื่อมต่อกับ AI Agent"
+        placeholder="https://your-n8n.app/webhook/...",
+        help="URL ของ N8N webhook ที่เชื่อมต่อกับ AI Agent"
     )
     
     if webhook_url != st.session_state.webhook_url:
         st.session_state.webhook_url = webhook_url
-        if webhook_url:
-            st.success("✅ บันทึก Webhook URL สำเร็จ!")
+        st.rerun()
+    
+    if st.session_state.webhook_url:
+        st.success("✅ เชื่อมต่อแล้ว")
     
     st.markdown("---")
     
     # Database Context
-    with st.expander("🗄️ Database Context"):
+    with st.expander("🗄️ Database Context", expanded=False):
         db_type = st.selectbox(
             "ประเภท Database",
             ["PostgreSQL", "MySQL", "SQLite", "MongoDB", "SQL Server", "Other"]
@@ -652,7 +524,7 @@ with st.sidebar:
             help="ข้อกำหนดพิเศษสำหรับ AI Agent"
         )
         
-        if st.button("💾 บันทึก Context", use_container_width=True):
+        if st.button("💾 บันทึก Context"):
             st.session_state.database_context = {
                 'db_type': db_type,
                 'schema': db_schema,
@@ -676,7 +548,7 @@ with st.sidebar:
     
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("🔄 New", use_container_width=True):
+        if st.button("🔄 New Session", use_container_width=True):
             st.session_state.SessionId = f"session_{int(time.time())}"
             st.session_state.messages = []
             st.session_state.total_requests = 0
@@ -685,7 +557,7 @@ with st.sidebar:
             st.rerun()
     
     with col2:
-        if st.button("🗑️ Clear", use_container_width=True):
+        if st.button("🗑️ Clear Chat", use_container_width=True):
             st.session_state.messages = []
             st.rerun()
     
@@ -712,9 +584,9 @@ with st.sidebar:
     if st.session_state.messages:
         csv_data = export_chat_history(st.session_state.messages)
         st.download_button(
-            label="📥 Download CSV",
+            label="📥 Download History (CSV)",
             data=csv_data,
-            file_name=f"ai_chat_{st.session_state.SessionId}.csv",
+            file_name=f"ai_agent_chat_{st.session_state.SessionId}.csv",
             mime="text/csv",
             use_container_width=True
         )
@@ -744,35 +616,29 @@ st.markdown("ระบบ AI Agent ที่ช่วยคุณสนทนา
 # Warning
 if not st.session_state.webhook_url:
     st.warning("⚠️ กรุณาใส่ N8N Webhook URL ในแถบด้านซ้าย")
-    st.markdown("""
-    <div class="welcome-card">
-        <h4>📚 การตั้งค่า AI Agent</h4>
-        <ul>
-            <li>✅ สร้าง n8n workflow สำหรับ AI Agent</li>
-            <li>✅ เชื่อมต่อกับ Database (PostgreSQL, MySQL, etc.)</li>
-            <li>✅ เพิ่ม AI Model (OpenAI, Claude, etc.)</li>
-            <li>✅ คัดลอก Webhook URL มาใส่ที่นี่</li>
-        </ul>
-    </div>
-    """, unsafe_allow_html=True)
+    st.info("""
+    **การตั้งค่า AI Agent:**
+    1. สร้าง n8n workflow สำหรับ AI Agent
+    2. เชื่อมต่อกับ Database (PostgreSQL, MySQL, etc.)
+    3. เพิ่ม AI Model (OpenAI, Claude, etc.)
+    4. คัดลอก Webhook URL มาใส่ที่นี่
+    """)
 
 # Chat Container
 chat_container = st.container()
 with chat_container:
     if not st.session_state.messages:
-        st.markdown("""
-        <div class="welcome-card">
-            <h4>👋 ยินดีต้อนรับสู่ AI Agent Chat!</h4>
-            <p style="margin-bottom: 1rem; color: #4a5568;">ฉันสามารถช่วยคุณ:</p>
-            <ul>
-                <li>🔍 Query ข้อมูลจาก Database ด้วยภาษาธรรมชาติ</li>
-                <li>📊 วิเคราะห์และสรุปข้อมูล</li>
-                <li>📈 สร้างรายงานและ insights</li>
-                <li>💡 แนะนำ optimizations</li>
-            </ul>
-            <p style="margin-top: 1rem; color: #667eea; font-weight: 500;">เริ่มต้นโดยพิมพ์คำถามของคุณด้านล่าง!</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.info("""
+        👋 **ยินดีต้อนรับสู่ AI Agent Chat!**
+        
+        ฉันสามารถช่วยคุณ:
+        - 🔍 Query ข้อมูลจาก Database ด้วยภาษาธรรมชาติ
+        - 📊 วิเคราะห์และสรุปข้อมูล
+        - 📈 สร้างรายงานและ insights
+        - 💡 แนะนำ optimizations
+        
+        เริ่มต้นโดยพิมพ์คำถามของคุณด้านล่าง!
+        """)
     else:
         for msg in st.session_state.messages:
             # แสดงข้อความ
@@ -792,7 +658,7 @@ with chat_container:
             if msg.get('data'):
                 display_data_table(msg['data'])
             
-            st.markdown("<div style='margin: 1rem 0;'></div>", unsafe_allow_html=True)
+            st.markdown("---")
 
 # Input Area
 st.markdown("### 💬 พิมพ์คำถามของคุณ")
@@ -889,9 +755,15 @@ if send_button and user_input.strip():
 # Footer
 st.markdown("---")
 st.markdown("""
-<div class="footer">
-    <strong>🤖 AI Agent Chat with Database</strong><br>
-    Powered by Streamlit + N8N + AI | Natural Language to SQL<br>
-    <small style="color: #a0aec0;">Made with ❤️ using Noto Sans Thai</small>
+<div style='text-align: center; color: #718096; padding: 1.5rem;'>
+    <div style='margin-bottom: 0.5rem;'>
+        <strong style='font-size: 1.1rem;'>🤖 AI Agent Chat with Database</strong>
+    </div>
+    <div style='font-size: 0.9rem;'>
+        Powered by Streamlit + N8N + AI | Natural Language to SQL
+    </div>
+    <div style='margin-top: 0.75rem; font-size: 0.85rem; opacity: 0.8;'>
+        ปรับปรุงโดย Senior Web Developer & Data Science Team
+    </div>
 </div>
 """, unsafe_allow_html=True)
