@@ -326,11 +326,43 @@ def format_markdown_content(text):
         flags=re.MULTILINE
     )
     
-    # แปลง markdown images ![alt](url) เป็น HTML img tag (ต้องทำก่อนแปลง line breaks)
+    # จัดการกับ QuickChart URLs ที่ caption และ URL แยกคนละบรรทัด
+    # Pattern: บรรทัดแรกเป็น caption, บรรทัดถัดไปเป็น encoded URL
+    def convert_caption_and_url(match):
+        caption = match.group(1).strip()
+        url_part = match.group(2).strip()
+        
+        # เติม URL ส่วนหน้า
+        if not url_part.startswith('http'):
+            full_url = 'https://quickchart.io/chart?c=' + url_part
+        else:
+            full_url = url_part
+        
+        # ลบวงเล็บปิดท้าย ถ้ามี
+        full_url = full_url.rstrip(')')
+        
+        return f'<div style="margin: 1.5rem 0; text-align: center;"><img src="{full_url}" alt="{caption}" style="max-width: 100%; height: auto; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" /><div style="margin-top: 0.5rem; font-size: 0.9rem; color: #64748b; font-style: italic;">{caption}</div></div>'
+    
+    # จับ pattern: บรรทัดข้อความ + บรรทัด URL ที่ encode
+    text = re.sub(
+        r'^([^\n%]+)\n([%\w\d\-_\.]+%[%\w\d\-_\.\:\,\{\}\[\]\(\)]+\)?)$',
+        convert_caption_and_url,
+        text,
+        flags=re.MULTILINE
+    )
+    
+    # แปลง markdown images ![alt](url) เป็น HTML img tag
     # รองรับทั้ง QuickChart และ image URLs อื่นๆ
     def convert_image(match):
         alt_text = match.group(1)
         img_url = match.group(2)
+        
+        # แก้ไข URL ที่ไม่สมบูรณ์ (ขาดส่วนหน้า)
+        if img_url.startswith('%') or (not img_url.startswith('http') and not img_url.startswith('//')):
+            # ถ้าดูเหมือน QuickChart URL ที่ขาดส่วนหน้า
+            if '%22' in img_url or '%3A' in img_url:
+                img_url = 'https://quickchart.io/chart?c=' + img_url
+        
         return f'<div style="margin: 1.5rem 0; text-align: center;"><img src="{img_url}" alt="{alt_text}" style="max-width: 100%; height: auto; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" /><div style="margin-top: 0.5rem; font-size: 0.9rem; color: #64748b; font-style: italic;">{alt_text}</div></div>'
     
     text = re.sub(r'!\[([^\]]*)\]\(([^\)]+)\)', convert_image, text)
