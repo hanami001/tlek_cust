@@ -270,6 +270,71 @@ def format_markdown_content(text):
     # ทำความสะอาดข้อความก่อน
     text = clean_text(text)
     
+    # แปลง markdown tables เป็น HTML tables
+    def convert_markdown_table(match):
+        table_text = match.group(0)
+        lines = [line.strip() for line in table_text.strip().split('\n') if line.strip()]
+        
+        if len(lines) < 2:
+            return table_text
+        
+        # แยก header และ rows
+        header_line = lines[0]
+        separator_line = lines[1] if len(lines) > 1 else None
+        data_lines = lines[2:] if len(lines) > 2 else []
+        
+        # ตรวจสอบว่าเป็น markdown table จริงหรือไม่
+        if not separator_line or not re.match(r'\|[\s\-:]+\|', separator_line):
+            return table_text
+        
+        # Parse header
+        headers = [col.strip() for col in header_line.split('|') if col.strip()]
+        
+        # สร้าง HTML table
+        html = '<table style="width:100%; border-collapse: collapse; margin: 1rem 0; background: white; border-radius: 0.5rem; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">'
+        
+        # Header
+        html += '<thead><tr style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">'
+        for header in headers:
+            html += f'<th style="color: white; padding: 0.75rem; text-align: left; font-weight: 600; font-family: \'Noto Sans Thai\', sans-serif;">{header}</th>'
+        html += '</tr></thead>'
+        
+        # Body
+        html += '<tbody>'
+        for idx, line in enumerate(data_lines):
+            cols = [col.strip() for col in line.split('|') if col.strip()]
+            if not cols:
+                continue
+            
+            bg_color = '#f9fafb' if idx % 2 == 1 else 'white'
+            html += f'<tr style="background: {bg_color};">'
+            for col in cols:
+                html += f'<td style="padding: 0.75rem; border-bottom: 1px solid #e5e7eb; font-family: \'Noto Sans Thai\', sans-serif;">{col}</td>'
+            html += '</tr>'
+        html += '</tbody></table>'
+        
+        # เพิ่ม CSS สำหรับ hover
+        html += '<style>table tbody tr:hover { background: #e5e7eb !important; transition: background 0.2s ease; }</style>'
+        
+        return html
+    
+    # จับ markdown table pattern (ต้องมีอย่างน้อย 2 บรรทัด และมี separator)
+    text = re.sub(
+        r'(?:^\|.+\|\s*$\n)+',
+        convert_markdown_table,
+        text,
+        flags=re.MULTILINE
+    )
+    
+    # แปลง markdown images ![alt](url) เป็น HTML img tag (ต้องทำก่อนแปลง line breaks)
+    # รองรับทั้ง QuickChart และ image URLs อื่นๆ
+    def convert_image(match):
+        alt_text = match.group(1)
+        img_url = match.group(2)
+        return f'<div style="margin: 1.5rem 0; text-align: center;"><img src="{img_url}" alt="{alt_text}" style="max-width: 100%; height: auto; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" /><div style="margin-top: 0.5rem; font-size: 0.9rem; color: #64748b; font-style: italic;">{alt_text}</div></div>'
+    
+    text = re.sub(r'!\[([^\]]*)\]\(([^\)]+)\)', convert_image, text)
+    
     # แปลง markdown headers (##, ###)
     text = re.sub(r'^### (.+)$', r'<h3>\1</h3>', text, flags=re.MULTILINE)
     text = re.sub(r'^## (.+)$', r'<h2>\1</h2>', text, flags=re.MULTILINE)
