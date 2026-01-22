@@ -6,7 +6,6 @@ import time
 import pandas as pd
 from io import StringIO
 import base64
-import re
 
 # ตั้งค่าหน้าเว็บ
 st.set_page_config(
@@ -16,248 +15,331 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS ที่ปรับปรุงแล้ว รองรับ tables และ code blocks
+# CSS ที่ปรับปรุงแล้วพร้อม Noto Sans Thai และ UI สวยงาม
 st.markdown("""
 <style>
+    /* Import Google Font - Noto Sans Thai */
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap');
     
+    /* Global Font Settings */
     * {
-        font-family: 'Noto Sans Thai', sans-serif;
+        font-family: 'Noto Sans Thai', sans-serif !important;
     }
     
+    html, body, [class*="css"] {
+        font-family: 'Noto Sans Thai', sans-serif !important;
+    }
+    
+    /* Main Container Styling */
+    .main {
+        background: linear-gradient(135deg, #f5f7fa 0%, #e8eef5 100%);
+    }
+    
+    /* Sidebar Styling */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #1e3a8a 0%, #1e40af 100%);
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    }
+    
+    [data-testid="stSidebar"] * {
+        color: white !important;
+    }
+    
+    [data-testid="stSidebar"] .stMarkdown {
+        color: white !important;
+    }
+    
+    /* Chat Message Styles */
     .chat-message {
         padding: 1.5rem;
-        border-radius: 0.8rem;
-        margin-bottom: 1rem;
+        border-radius: 1rem;
+        margin-bottom: 1.5rem;
         display: flex;
         flex-direction: column;
-        animation: fadeIn 0.3s ease-in;
+        animation: slideIn 0.4s ease-out;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        backdrop-filter: blur(10px);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
+    
+    .chat-message:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.12);
     }
+    
+    @keyframes slideIn {
+        from { 
+            opacity: 0; 
+            transform: translateX(-20px);
+        }
+        to { 
+            opacity: 1; 
+            transform: translateX(0);
+        }
+    }
+    
     .user-message {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
-        margin-left: 15%;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-left: 10%;
+        border-bottom-right-radius: 0.3rem;
     }
+    
     .bot-message {
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-        margin-right: 15%;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        background: white;
+        margin-right: 10%;
+        border-bottom-left-radius: 0.3rem;
+        border-left: 4px solid #667eea;
     }
+    
     .message-header {
-        font-weight: bold;
-        margin-bottom: 0.5rem;
-        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        font-size: 0.95rem;
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.75rem;
+        letter-spacing: 0.3px;
     }
+    
     .user-message .message-header {
-        color: rgba(255,255,255,0.9);
+        color: rgba(255,255,255,0.95);
     }
+    
     .bot-message .message-header {
-        color: #333;
+        color: #1e3a8a;
     }
+    
     .message-content {
-        font-size: 1rem;
-        line-height: 1.6;
+        font-size: 1.05rem;
+        line-height: 1.8;
+        white-space: pre-wrap;
         word-wrap: break-word;
-        overflow-wrap: break-word;
+        font-weight: 400;
     }
+    
     .user-message .message-content {
         color: white;
     }
+    
+    .bot-message .message-content {
+        color: #334155;
+    }
+    
     .timestamp {
-        font-size: 0.75rem;
-        margin-top: 0.5rem;
-        opacity: 0.7;
+        font-size: 0.8rem;
+        margin-top: 0.75rem;
+        opacity: 0.75;
+        font-weight: 300;
     }
+    
+    /* Badge Styles */
     .query-badge {
-        background: #3b82f6;
-        color: white;
-        padding: 0.25rem 0.75rem;
-        border-radius: 1rem;
-        font-size: 0.8rem;
-        display: inline-block;
-        margin-top: 0.5rem;
-    }
-    .data-badge {
-        background: #10b981;
-        color: white;
-        padding: 0.25rem 0.75rem;
-        border-radius: 1rem;
-        font-size: 0.8rem;
-        display: inline-block;
-        margin-top: 0.5rem;
-    }
-    .stDataFrame {
-        margin-top: 1rem;
-    }
-    
-    /* Markdown Styling for Bot Messages */
-    .bot-message h1, .bot-message h2, .bot-message h3, .bot-message h4 {
-        color: #1e40af;
-        margin-top: 1.5rem;
-        margin-bottom: 0.8rem;
-        font-weight: 600;
-        border-bottom: 2px solid #3b82f6;
-        padding-bottom: 0.3rem;
-    }
-    
-    .bot-message h2 {
-        font-size: 1.4rem;
-    }
-    
-    .bot-message h3 {
-        font-size: 1.2rem;
-        border-bottom: 1px solid #93c5fd;
-    }
-    
-    .bot-message strong {
-        color: #1e3a8a;
-        font-weight: 600;
-    }
-    
-    .bot-message ul, .bot-message ol {
-        margin: 1rem 0;
-        padding-left: 1.5rem;
-    }
-    
-    .bot-message li {
-        margin: 0.5rem 0;
-        line-height: 1.8;
-    }
-    
-    .bot-message li::marker {
-        color: #3b82f6;
-        font-weight: bold;
-    }
-    
-    .bot-message code {
-        background: #f1f5f9;
-        padding: 0.2rem 0.4rem;
-        border-radius: 0.25rem;
-        font-family: 'Courier New', monospace;
-        color: #dc2626;
-        font-size: 0.9em;
-    }
-    
-    .bot-message blockquote {
-        border-left: 4px solid #3b82f6;
-        margin: 1rem 0;
-        padding: 0.5rem 1rem;
-        background: #eff6ff;
-        border-radius: 0.25rem;
-    }
-    
-    .bot-message table {
-        border-collapse: collapse;
-        width: 100%;
-        margin: 1rem 0;
-        background: white;
-        border-radius: 0.5rem;
-        overflow: hidden;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    
-    .bot-message th {
         background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
         color: white;
-        padding: 0.75rem;
-        text-align: left;
+        padding: 0.4rem 1rem;
+        border-radius: 1.5rem;
+        font-size: 0.85rem;
+        display: inline-block;
+        margin-top: 0.75rem;
+        font-weight: 500;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    }
+    
+    .data-badge {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        padding: 0.4rem 1rem;
+        border-radius: 1.5rem;
+        font-size: 0.85rem;
+        display: inline-block;
+        margin-top: 0.75rem;
+        font-weight: 500;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    }
+    
+    /* DataFrame Styling */
+    .stDataFrame {
+        margin-top: 1.5rem;
+        border-radius: 0.75rem;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    
+    /* Button Styling */
+    .stButton > button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 0.75rem;
+        padding: 0.75rem 1.5rem;
         font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
     }
     
-    .bot-message td {
-        padding: 0.75rem;
-        border-bottom: 1px solid #e5e7eb;
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
     }
     
-    .bot-message tr:hover {
-        background: #f9fafb;
-    }
-    
-    /* Highlight boxes */
-    .highlight-box {
-        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-        border-left: 4px solid #3b82f6;
+    /* Input Styling */
+    .stTextInput > div > div > input,
+    .stTextArea > div > div > textarea {
+        border-radius: 0.75rem;
+        border: 2px solid #e2e8f0;
         padding: 1rem;
-        border-radius: 0.5rem;
-        margin: 1rem 0;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        font-size: 1rem;
+        transition: all 0.3s ease;
     }
     
-    .warning-box {
-        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-        border-left: 4px solid #f59e0b;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin: 1rem 0;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    .stTextInput > div > div > input:focus,
+    .stTextArea > div > div > textarea:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
     
-    .success-box {
-        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-        border-left: 4px solid #10b981;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin: 1rem 0;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-    
-    .stat-card {
-        background: white;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        margin: 0.5rem 0;
-        border-left: 4px solid #3b82f6;
-    }
-    
-    .stat-number {
+    /* Metric Styling */
+    [data-testid="stMetricValue"] {
         font-size: 2rem;
         font-weight: 700;
-        color: #1e40af;
-        margin: 0.5rem 0;
+        color: #1e3a8a;
     }
     
-    .stat-label {
-        font-size: 0.9rem;
+    [data-testid="stMetricLabel"] {
+        font-weight: 600;
         color: #64748b;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
+        font-size: 0.95rem;
+    }
+    
+    /* Code Block Styling */
+    code {
+        background: #f1f5f9;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        font-family: 'Courier New', monospace !important;
+    }
+    
+    pre {
+        background: #1e293b;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        overflow-x: auto;
+    }
+    
+    /* Title Styling */
+    h1 {
+        color: #1e3a8a;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.5px;
+    }
+    
+    h2 {
+        color: #1e40af;
+        font-weight: 600;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+    }
+    
+    h3 {
+        color: #3730a3;
+        font-weight: 600;
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    /* Info Box Styling */
+    .stAlert {
+        border-radius: 0.75rem;
+        border: none;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    /* Expander Styling */
+    .streamlit-expanderHeader {
+        background: white;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        color: #1e3a8a;
+    }
+    
+    /* Select Box Styling */
+    .stSelectbox > div > div {
+        border-radius: 0.75rem;
+        border: 2px solid #e2e8f0;
+    }
+    
+    /* Download Button Styling */
+    .stDownloadButton > button {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        border: none;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+    
+    .stDownloadButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+    }
+    
+    /* Spinner Styling */
+    .stSpinner > div {
+        border-color: #667eea !important;
+    }
+    
+    /* Divider Styling */
+    hr {
+        margin: 2rem 0;
+        border: none;
+        border-top: 2px solid #e2e8f0;
+        opacity: 0.5;
+    }
+    
+    /* Card Effect for Containers */
+    .element-container {
+        transition: all 0.3s ease;
+    }
+    
+    /* Footer Styling */
+    .footer {
+        background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 1rem;
+        text-align: center;
+        margin-top: 3rem;
+        box-shadow: 0 4px 20px rgba(30, 58, 138, 0.2);
     }
 </style>
 """, unsafe_allow_html=True)
 
-# ฟังก์ชันทำความสะอาดข้อความ
-def clean_text(text):
-    """
-    ทำความสะอาดข้อความโดยลบ line breaks ที่มากเกินไป
-    และปรับให้แสดงผลสวยงาม
-    """
-    if not text:
-        return ""
-    
-    # แปลงเป็น string ถ้ายังไม่ใช่
-    text = str(text)
-    
-    # ลบ line breaks มากเกิน 2 ครั้งติดกัน (เหลือแค่ 2)
-    text = re.sub(r'\n{3,}', '\n\n', text)
-    
-    # ลบช่องว่างที่ต้นและท้ายบรรทัด
-    lines = text.split('\n')
-    lines = [line.rstrip() for line in lines]
-    text = '\n'.join(lines)
-    
-    # ลบช่องว่างที่ต้นและท้ายข้อความทั้งหมด
-    text = text.strip()
-    
-    return text
+# Initialize Session State
+if 'messages' not in st.session_state:
+    st.session_state.messages = []
+
+if 'webhook_url' not in st.session_state:
+    st.session_state.webhook_url = ""
+
+if 'SessionId' not in st.session_state:
+    st.session_state.SessionId = f"session_{int(time.time())}"
+
+if 'is_processing' not in st.session_state:
+    st.session_state.is_processing = False
+
+if 'database_context' not in st.session_state:
+    st.session_state.database_context = {}
+
+if 'total_requests' not in st.session_state:
+    st.session_state.total_requests = 0
+
+if 'successful_requests' not in st.session_state:
+    st.session_state.successful_requests = 0
+
+if 'total_queries' not in st.session_state:
+    st.session_state.total_queries = 0
 
 # ฟังก์ชันสำหรับ parse response จาก AI Agent
 def parse_agent_response(response_data):
@@ -272,7 +354,7 @@ def parse_agent_response(response_data):
     }
     
     if isinstance(response_data, str):
-        parsed['text'] = clean_text(response_data)
+        parsed['text'] = response_data
         return parsed
     
     if isinstance(response_data, dict):
@@ -281,7 +363,7 @@ def parse_agent_response(response_data):
         
         for key in text_keys:
             if key in response_data:
-                parsed['text'] = clean_text(str(response_data[key]))
+                parsed['text'] = str(response_data[key])
                 break
         
         # ดึง SQL query (ถ้ามี)
@@ -307,7 +389,7 @@ def parse_agent_response(response_data):
         
         # ถ้าไม่เจอข้อความ ให้แสดงทั้งหมดเป็น JSON
         if not parsed['text']:
-            parsed['text'] = clean_text(json.dumps(response_data, indent=2, ensure_ascii=False))
+            parsed['text'] = json.dumps(response_data, indent=2, ensure_ascii=False)
     
     return parsed
 
@@ -389,7 +471,7 @@ def send_to_ai_agent(webhook_url, message, session_id=None, context=None):
 def display_message(role, content, timestamp, metadata=None):
     """แสดงข้อความรวมถึง SQL queries และ data tables"""
     message_class = "user-message" if role == "user" else "bot-message"
-    role_name = "คุณ" if role == "user" else "🤖 AI Agent"
+    role_name = "คุณ" if role == "user" else "AI Agent"
     icon = "👤" if role == "user" else "🤖"
     
     # เตรียม metadata text
@@ -402,85 +484,16 @@ def display_message(role, content, timestamp, metadata=None):
         if metadata.get('has_data'):
             meta_text += " • 📊 Data"
     
-    # สำหรับ bot message ตรวจสอบว่ามี QuickChart URL หรือรูปภาพหรือไม่
-    image_urls = []
-    clean_content = content
-    
-    if role == "bot":
-        # ตรวจจับ markdown image syntax: ![alt](url)
-        markdown_images = re.findall(r'!\[([^\]]*)\]\(([^\)]+)\)', content)
-        for alt_text, img_url in markdown_images:
-            # แก้ไข URL ที่ไม่สมบูรณ์
-            if img_url.startswith('%') or (not img_url.startswith('http') and '%22' in img_url):
-                img_url = 'https://quickchart.io/chart?c=' + img_url
-            image_urls.append((alt_text, img_url))
-            # ลบ markdown syntax ออกจาก content
-            clean_content = clean_content.replace(f'![{alt_text}]({img_url})', '')
-        
-        # ตรวจจับ URL ธรรมดาที่เป็น QuickChart (ขึ้นต้นด้วย http หรือ encoded)
-        lines = content.split('\n')
-        caption_for_next_url = None
-        i = 0
-        while i < len(lines):
-            line = lines[i].strip()
-            
-            # ถ้าเป็นบรรทัด URL
-            if line.startswith('http') or (line.startswith('%') and '%22' in line):
-                # รวม URL หลายบรรทัด
-                full_url = line
-                j = i + 1
-                while j < len(lines) and (lines[j].strip().startswith('%') or re.match(r'^[%\w\d\-_\.\:\,\{\}\[\]\(\)]+$', lines[j].strip())):
-                    full_url += lines[j].strip()
-                    j += 1
-                
-                # ลบ whitespace ใน URL
-                full_url = re.sub(r'\s+', '', full_url)
-                
-                # แก้ไข URL ถ้าไม่สมบูรณ์
-                if not full_url.startswith('http'):
-                    full_url = 'https://quickchart.io/chart?c=' + full_url
-                
-                # ใช้ caption จากบรรทัดก่อนหน้า (ถ้ามี)
-                caption = caption_for_next_url if caption_for_next_url else "Chart"
-                image_urls.append((caption, full_url.rstrip(')')))
-                
-                # ลบบรรทัด URL ออกจาก content
-                for k in range(i, j):
-                    clean_content = clean_content.replace(lines[k], '')
-                if caption_for_next_url:
-                    clean_content = clean_content.replace(caption_for_next_url, '')
-                
-                caption_for_next_url = None
-                i = j
-            else:
-                # อาจเป็น caption สำหรับรูปถัดไป
-                if line and not line.startswith('#') and not line.startswith('-') and not line.startswith('*'):
-                    caption_for_next_url = line
-                i += 1
-    
-    # ทำความสะอาด content
-    clean_content = clean_text(clean_content)
-    
-    # แสดง message box
     st.markdown(f"""
     <div class="chat-message {message_class}">
         <div class="message-header">
             <span>{icon}</span>
             <span>{role_name}</span>
         </div>
-        <div class="message-content">{clean_content}</div>
+        <div class="message-content">{content}</div>
         <div class="timestamp">{timestamp}{meta_text}</div>
     </div>
     """, unsafe_allow_html=True)
-    
-    # แสดงรูปภาพ (ถ้ามี) ใช้ st.image แทน HTML
-    for alt_text, img_url in image_urls:
-        try:
-            st.image(img_url, caption=alt_text, use_container_width=True)
-        except Exception as e:
-            st.warning(f"⚠️ ไม่สามารถโหลดกราฟได้: {alt_text}")
-            with st.expander("ดู URL"):
-                st.code(img_url)
 
 # ฟังก์ชันแสดง SQL Query
 def display_sql_query(query):
@@ -490,165 +503,75 @@ def display_sql_query(query):
 
 # ฟังก์ชันแสดงข้อมูลในรูปแบบ DataFrame
 def display_data_table(data):
-    """แสดงข้อมูลในรูปแบบ DataFrame พร้อม styling"""
+    """แสดงข้อมูลในรูปแบบ DataFrame"""
     try:
         if isinstance(data, list) and len(data) > 0:
             df = pd.DataFrame(data)
+            st.markdown("**📊 ข้อมูลที่ได้:**")
+            st.dataframe(df, use_container_width=True)
             
-            # สร้าง HTML table
-            st.markdown("**📊 ผลลัพธ์จากฐานข้อมูล:**")
-            
-            # สร้าง HTML table header
-            html_table = '<table style="width:100%; border-collapse: collapse; margin: 1rem 0; background: white; border-radius: 0.5rem; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">'
-            
-            # Header row
-            html_table += '<thead><tr style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">'
-            for col in df.columns:
-                html_table += f'<th style="color: white; padding: 0.75rem; text-align: left; font-weight: 600; font-family: \'Noto Sans Thai\', sans-serif;">{col}</th>'
-            html_table += '</tr></thead>'
-            
-            # Body rows
-            html_table += '<tbody>'
-            for idx, row in df.iterrows():
-                bg_color = '#f9fafb' if idx % 2 == 1 else 'white'
-                html_table += f'<tr style="background: {bg_color};">'
-                for val in row:
-                    # จัดการค่า None/NaN
-                    display_val = str(val) if pd.notna(val) else '-'
-                    html_table += f'<td style="padding: 0.75rem; border-bottom: 1px solid #e5e7eb; font-family: \'Noto Sans Thai\', sans-serif;">{display_val}</td>'
-                html_table += '</tr>'
-            html_table += '</tbody></table>'
-            
-            # เพิ่ม CSS สำหรับ hover effect
-            st.markdown("""
-            <style>
-            table tbody tr:hover {
-                background: #e5e7eb !important;
-                transition: background 0.2s ease;
-            }
-            </style>
-            """, unsafe_allow_html=True)
-            
-            # แสดง HTML table
-            st.markdown(html_table, unsafe_allow_html=True)
-            
-            # แสดงสถิติพื้นฐานในรูปแบบ card
-            st.markdown('<div style="margin-top: 1.5rem;">', unsafe_allow_html=True)
+            # แสดงสถิติเพิ่มเติม
             col1, col2, col3 = st.columns(3)
-            
             with col1:
-                st.markdown(f"""
-                <div class="stat-card">
-                    <div class="stat-label">จำนวนแถว</div>
-                    <div class="stat-number">{len(df):,}</div>
-                </div>
-                """, unsafe_allow_html=True)
-            
+                st.metric("จำนวนแถว", len(df))
             with col2:
-                st.markdown(f"""
-                <div class="stat-card">
-                    <div class="stat-label">จำนวนคอลัมน์</div>
-                    <div class="stat-number">{len(df.columns)}</div>
-                </div>
-                """, unsafe_allow_html=True)
-            
+                st.metric("จำนวนคอลัมน์", len(df.columns))
             with col3:
-                memory_kb = df.memory_usage(deep=True).sum() / 1024
-                st.markdown(f"""
-                <div class="stat-card">
-                    <div class="stat-label">ขนาดข้อมูล</div>
-                    <div class="stat-number">{memory_kb:.1f} KB</div>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            # เพิ่มปุ่ม download CSV
-            csv = df.to_csv(index=False).encode('utf-8-sig')
-            st.download_button(
-                label="📥 ดาวน์โหลด CSV",
-                data=csv,
-                file_name=f"data_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                mime="text/csv",
-            )
-                
+                st.metric("ขนาดข้อมูล", f"{df.memory_usage(deep=True).sum() / 1024:.2f} KB")
         elif isinstance(data, dict):
-            st.markdown("**📊 ผลลัพธ์:**")
-            # แสดง dict ในรูป JSON ที่สวยงาม
-            json_str = json.dumps(data, indent=2, ensure_ascii=False)
-            st.markdown(f'<pre style="background: #f1f5f9; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; font-family: \'Courier New\', monospace;">{json_str}</pre>', unsafe_allow_html=True)
+            st.markdown("**📊 ข้อมูลที่ได้:**")
+            st.json(data)
         else:
-            st.markdown("**📊 ผลลัพธ์:**")
+            st.markdown("**📊 ข้อมูลที่ได้:**")
             st.write(data)
-            
     except Exception as e:
-        st.error(f"ไม่สามารถแสดงข้อมูลได้: {str(e)}")
+        st.warning(f"⚠️ ไม่สามารถแสดงข้อมูลในรูปแบบตารางได้: {str(e)}")
         st.json(data)
 
-# ฟังก์ชัน Export Chat History
+# ฟังก์ชัน export ประวัติการสนทนา
 def export_chat_history(messages):
-    """Export chat history เป็น CSV"""
+    """Export ประวัติการสนทนาเป็น CSV"""
     data = []
     for msg in messages:
         data.append({
             'Timestamp': msg['timestamp'],
             'Role': msg['role'],
             'Content': msg['content'],
-            'SQL Query': msg.get('sql_query', ''),
-            'Has Data': msg.get('has_data', False)
+            'Has_SQL': 'Yes' if msg.get('sql_query') else 'No',
+            'Has_Data': 'Yes' if msg.get('data') else 'No'
         })
     
     df = pd.DataFrame(data)
-    return df.to_csv(index=False).encode('utf-8-sig')
+    return df.to_csv(index=False, encoding='utf-8-sig')
 
-# Initialize Session State
-if 'messages' not in st.session_state:
-    st.session_state.messages = []
-
-if 'webhook_url' not in st.session_state:
-    st.session_state.webhook_url = ""
-
-if 'SessionId' not in st.session_state:
-    st.session_state.SessionId = f"session_{int(time.time())}"
-
-if 'is_processing' not in st.session_state:
-    st.session_state.is_processing = False
-
-if 'total_requests' not in st.session_state:
-    st.session_state.total_requests = 0
-
-if 'successful_requests' not in st.session_state:
-    st.session_state.successful_requests = 0
-
-if 'total_queries' not in st.session_state:
-    st.session_state.total_queries = 0
-
-if 'database_context' not in st.session_state:
-    st.session_state.database_context = None
-
-# Sidebar
+# ========================================
+# SIDEBAR
+# ========================================
 with st.sidebar:
-    st.title("⚙️ การตั้งค่า")
+    st.markdown("## ⚙️ การตั้งค่า")
+    st.markdown("---")
     
-    # Webhook Configuration
-    st.markdown("### 🔗 N8N Webhook URL")
-    webhook_input = st.text_input(
+    # Webhook URL
+    st.markdown("### 🔗 N8N Webhook")
+    
+    webhook_url = st.text_input(
         "Webhook URL",
         value=st.session_state.webhook_url,
-        placeholder="https://your-n8n.app.n8n.cloud/webhook/...",
-        label_visibility="collapsed"
+        placeholder="https://your-n8n-instance.com/webhook/...",
+        help="URL ของ N8N Webhook ที่เชื่อมต่อกับ AI Agent"
     )
     
-    if webhook_input != st.session_state.webhook_url:
-        st.session_state.webhook_url = webhook_input
-        st.success("✅ อัพเดท Webhook URL สำเร็จ!")
+    if webhook_url != st.session_state.webhook_url:
+        st.session_state.webhook_url = webhook_url
+        if webhook_url:
+            st.success("✅ บันทึก Webhook URL แล้ว")
     
     st.markdown("---")
     
     # Database Context
     st.markdown("### 🗄️ Database Context")
     
-    with st.expander("ตั้งค่า Database Info"):
+    with st.expander("📝 ตั้งค่า Database", expanded=False):
         db_type = st.selectbox(
             "ประเภท Database",
             ["PostgreSQL", "MySQL", "SQLite", "MongoDB", "SQL Server", "Other"]
@@ -666,7 +589,7 @@ with st.sidebar:
             help="ข้อกำหนดพิเศษสำหรับ AI Agent"
         )
         
-        if st.button("💾 บันทึก Context"):
+        if st.button("💾 บันทึก Context", use_container_width=True):
             st.session_state.database_context = {
                 'db_type': db_type,
                 'schema': db_schema,
@@ -751,15 +674,19 @@ with st.sidebar:
         - สรุปประสิทธิภาพสินค้า
         """)
 
-# Main Area
+# ========================================
+# MAIN AREA
+# ========================================
 st.title("🤖 AI Agent: Chat with Database")
-st.markdown("ระบบ AI Agent ที่ช่วยคุณสนทนากับ Database ผ่านภาษาธรรมชาติ")
+st.markdown("### ระบบ AI Agent ที่ช่วยคุณสนทนากับ Database ผ่านภาษาธรรมชาติ")
 
 # Warning
 if not st.session_state.webhook_url:
     st.warning("⚠️ กรุณาใส่ N8N Webhook URL ในแถบด้านซ้าย")
+    
     st.info("""
-    **การตั้งค่า AI Agent:**
+    **📝 การตั้งค่า AI Agent:**
+    
     1. สร้าง n8n workflow สำหรับ AI Agent
     2. เชื่อมต่อกับ Database (PostgreSQL, MySQL, etc.)
     3. เพิ่ม AI Model (OpenAI, Claude, etc.)
@@ -770,17 +697,21 @@ if not st.session_state.webhook_url:
 chat_container = st.container()
 with chat_container:
     if not st.session_state.messages:
-        st.info("""
-        👋 **ยินดีต้อนรับสู่ AI Agent Chat!**
-        
-        ฉันสามารถช่วยคุณ:
-        - 🔍 Query ข้อมูลจาก Database ด้วยภาษาธรรมชาติ
-        - 📊 วิเคราะห์และสรุปข้อมูล
-        - 📈 สร้างรายงานและ insights
-        - 💡 แนะนำ optimizations
-        
-        เริ่มต้นโดยพิมพ์คำถามของคุณด้านล่าง!
-        """)
+        st.markdown("""
+        <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                    padding: 2rem; border-radius: 1rem; color: white; 
+                    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);'>
+            <h2 style='color: white; margin-top: 0;'>👋 ยินดีต้อนรับสู่ AI Agent Chat!</h2>
+            <p style='font-size: 1.1rem; line-height: 1.8; color: rgba(255,255,255,0.95);'>
+                ฉันสามารถช่วยคุณ:<br><br>
+                🔍 Query ข้อมูลจาก Database ด้วยภาษาธรรมชาติ<br>
+                📊 วิเคราะห์และสรุปข้อมูล<br>
+                📈 สร้างรายงานและ insights<br>
+                💡 แนะนำ optimizations<br><br>
+                <strong>เริ่มต้นโดยพิมพ์คำถามของคุณด้านล่าง! 👇</strong>
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
     else:
         for msg in st.session_state.messages:
             # แสดงข้อความ
@@ -800,9 +731,10 @@ with chat_container:
             if msg.get('data'):
                 display_data_table(msg['data'])
             
-            st.markdown("---")
+            st.markdown("<div style='margin: 1rem 0;'></div>", unsafe_allow_html=True)
 
 # Input Area
+st.markdown("---")
 st.markdown("### 💬 พิมพ์คำถามของคุณ")
 
 with st.form(key="chat_form", clear_on_submit=True):
@@ -897,11 +829,13 @@ if send_button and user_input.strip():
 # Footer
 st.markdown("---")
 st.markdown("""
-<div style='text-align: center; color: #666; padding: 1rem;'>
-    <small>
-        🤖 <strong>AI Agent Chat with Database</strong> | 
-        Powered by Streamlit + N8N + AI | 
-        Natural Language to SQL
-    </small>
+<div class='footer'>
+    <h3 style='color: white; margin-top: 0;'>🤖 AI Agent Chat with Database</h3>
+    <p style='color: rgba(255,255,255,0.9); margin-bottom: 0;'>
+        Powered by Streamlit + N8N + AI | Natural Language to SQL
+    </p>
+    <p style='color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-top: 0.5rem;'>
+        สร้างด้วย ❤️ และ AI Technology
+    </p>
 </div>
 """, unsafe_allow_html=True)
