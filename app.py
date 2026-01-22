@@ -97,6 +97,140 @@ st.markdown("""
     .stDataFrame {
         margin-top: 1rem;
     }
+    
+    /* Markdown Styling for Bot Messages */
+    .bot-message h1, .bot-message h2, .bot-message h3, .bot-message h4 {
+        color: #1e40af;
+        margin-top: 1.5rem;
+        margin-bottom: 0.8rem;
+        font-weight: 600;
+        border-bottom: 2px solid #3b82f6;
+        padding-bottom: 0.3rem;
+    }
+    
+    .bot-message h2 {
+        font-size: 1.4rem;
+    }
+    
+    .bot-message h3 {
+        font-size: 1.2rem;
+        border-bottom: 1px solid #93c5fd;
+    }
+    
+    .bot-message strong {
+        color: #1e3a8a;
+        font-weight: 600;
+    }
+    
+    .bot-message ul, .bot-message ol {
+        margin: 1rem 0;
+        padding-left: 1.5rem;
+    }
+    
+    .bot-message li {
+        margin: 0.5rem 0;
+        line-height: 1.8;
+    }
+    
+    .bot-message li::marker {
+        color: #3b82f6;
+        font-weight: bold;
+    }
+    
+    .bot-message code {
+        background: #f1f5f9;
+        padding: 0.2rem 0.4rem;
+        border-radius: 0.25rem;
+        font-family: 'Courier New', monospace;
+        color: #dc2626;
+        font-size: 0.9em;
+    }
+    
+    .bot-message blockquote {
+        border-left: 4px solid #3b82f6;
+        margin: 1rem 0;
+        padding: 0.5rem 1rem;
+        background: #eff6ff;
+        border-radius: 0.25rem;
+    }
+    
+    .bot-message table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 1rem 0;
+        background: white;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .bot-message th {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+        padding: 0.75rem;
+        text-align: left;
+        font-weight: 600;
+    }
+    
+    .bot-message td {
+        padding: 0.75rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .bot-message tr:hover {
+        background: #f9fafb;
+    }
+    
+    /* Highlight boxes */
+    .highlight-box {
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        border-left: 4px solid #3b82f6;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin: 1rem 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .warning-box {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border-left: 4px solid #f59e0b;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin: 1rem 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .success-box {
+        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+        border-left: 4px solid #10b981;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin: 1rem 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .stat-card {
+        background: white;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin: 0.5rem 0;
+        border-left: 4px solid #3b82f6;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1e40af;
+        margin: 0.5rem 0;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -122,6 +256,66 @@ def clean_text(text):
     
     # ลบช่องว่างที่ต้นและท้ายข้อความทั้งหมด
     text = text.strip()
+    
+    return text
+
+# ฟังก์ชันแปลง markdown เป็น HTML ที่สวยงาม
+def format_markdown_content(text):
+    """
+    แปลง markdown text เป็น HTML พร้อม styling
+    """
+    if not text:
+        return ""
+    
+    # ทำความสะอาดข้อความก่อน
+    text = clean_text(text)
+    
+    # แปลง markdown headers (##, ###)
+    text = re.sub(r'^### (.+)$', r'<h3>\1</h3>', text, flags=re.MULTILINE)
+    text = re.sub(r'^## (.+)$', r'<h2>\1</h2>', text, flags=re.MULTILINE)
+    text = re.sub(r'^# (.+)$', r'<h1>\1</h1>', text, flags=re.MULTILINE)
+    
+    # แปลง **bold** text
+    text = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', text)
+    
+    # แปลง bullet lists (- หรือ *)
+    def convert_list(match):
+        items = match.group(0)
+        lines = items.strip().split('\n')
+        html_items = []
+        for line in lines:
+            item_text = re.sub(r'^[\-\*]\s+', '', line)
+            html_items.append(f'<li>{item_text}</li>')
+        return '<ul>' + ''.join(html_items) + '</ul>'
+    
+    # จับ bullet list ที่ติดกัน
+    text = re.sub(r'(?:^[\-\*]\s+.+$\n?)+', convert_list, text, flags=re.MULTILINE)
+    
+    # แปลง numbered lists
+    def convert_numbered_list(match):
+        items = match.group(0)
+        lines = items.strip().split('\n')
+        html_items = []
+        for line in lines:
+            item_text = re.sub(r'^\d+\.\s+', '', line)
+            html_items.append(f'<li>{item_text}</li>')
+        return '<ol>' + ''.join(html_items) + '</ol>'
+    
+    text = re.sub(r'(?:^\d+\.\s+.+$\n?)+', convert_numbered_list, text, flags=re.MULTILINE)
+    
+    # แปลง emojis พิเศษเป็น styled boxes
+    # ⚠️ warning
+    text = re.sub(r'⚠️\s*(.+?)(?=\n|$)', r'<div class="warning-box">⚠️ \1</div>', text)
+    # ✅ success
+    text = re.sub(r'✅\s*(.+?)(?=\n|$)', r'<div class="success-box">✅ \1</div>', text)
+    # 📊 info/stats
+    text = re.sub(r'📊\s*(.+?)(?=\n|$)', r'<div class="highlight-box">📊 \1</div>', text)
+    
+    # แปลง code blocks
+    text = re.sub(r'`([^`]+)`', r'<code>\1</code>', text)
+    
+    # แปลง line breaks ปกติเป็น <br>
+    text = text.replace('\n', '<br>')
     
     return text
 
@@ -258,11 +452,13 @@ def display_message(role, content, timestamp, metadata=None):
     role_name = "คุณ" if role == "user" else "🤖 AI Agent"
     icon = "👤" if role == "user" else "🤖"
     
-    # ทำความสะอาดข้อความก่อนแสดงผล
-    clean_content = clean_text(content)
-    
-    # แปลง newlines เป็น <br> สำหรับ HTML
-    html_content = clean_content.replace('\n', '<br>')
+    # สำหรับ bot message ใช้ markdown formatting
+    if role == "bot":
+        html_content = format_markdown_content(content)
+    else:
+        # สำหรับ user message ใช้แค่ clean text
+        clean_content = clean_text(content)
+        html_content = clean_content.replace('\n', '<br>')
     
     # เตรียม metadata text
     meta_text = ""
