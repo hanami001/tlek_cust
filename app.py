@@ -334,7 +334,7 @@ with st.sidebar:
 # -----------------------------------------------------------------------------
 # 6. Main Content
 # -----------------------------------------------------------------------------
-st.title("🤖 Data Intelligence Agent")
+st.title("🤖 TLEK Customer Intelligence Agent")
 st.caption("Chat with your database using natural language • Powered by N8N")
 
 # Chat History Display
