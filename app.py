@@ -6,6 +6,7 @@ import time
 import pandas as pd
 from io import StringIO
 import base64
+import re
 
 # ตั้งค่าหน้าเว็บ
 st.set_page_config(
@@ -18,6 +19,12 @@ st.set_page_config(
 # CSS ที่ปรับปรุงแล้ว รองรับ tables และ code blocks
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap');
+    
+    * {
+        font-family: 'Noto Sans Thai', sans-serif;
+    }
+    
     .chat-message {
         padding: 1.5rem;
         border-radius: 0.8rem;
@@ -58,8 +65,8 @@ st.markdown("""
     .message-content {
         font-size: 1rem;
         line-height: 1.6;
-        white-space: pre-wrap;
         word-wrap: break-word;
+        overflow-wrap: break-word;
     }
     .user-message .message-content {
         color: white;
@@ -93,6 +100,31 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# ฟังก์ชันทำความสะอาดข้อความ
+def clean_text(text):
+    """
+    ทำความสะอาดข้อความโดยลบ line breaks ที่มากเกินไป
+    และปรับให้แสดงผลสวยงาม
+    """
+    if not text:
+        return ""
+    
+    # แปลงเป็น string ถ้ายังไม่ใช่
+    text = str(text)
+    
+    # ลบ line breaks มากเกิน 2 ครั้งติดกัน (เหลือแค่ 2)
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    
+    # ลบช่องว่างที่ต้นและท้ายบรรทัด
+    lines = text.split('\n')
+    lines = [line.rstrip() for line in lines]
+    text = '\n'.join(lines)
+    
+    # ลบช่องว่างที่ต้นและท้ายข้อความทั้งหมด
+    text = text.strip()
+    
+    return text
+
 # ฟังก์ชันสำหรับ parse response จาก AI Agent
 def parse_agent_response(response_data):
     """
@@ -106,7 +138,7 @@ def parse_agent_response(response_data):
     }
     
     if isinstance(response_data, str):
-        parsed['text'] = response_data
+        parsed['text'] = clean_text(response_data)
         return parsed
     
     if isinstance(response_data, dict):
@@ -115,7 +147,7 @@ def parse_agent_response(response_data):
         
         for key in text_keys:
             if key in response_data:
-                parsed['text'] = str(response_data[key])
+                parsed['text'] = clean_text(str(response_data[key]))
                 break
         
         # ดึง SQL query (ถ้ามี)
@@ -141,7 +173,7 @@ def parse_agent_response(response_data):
         
         # ถ้าไม่เจอข้อความ ให้แสดงทั้งหมดเป็น JSON
         if not parsed['text']:
-            parsed['text'] = json.dumps(response_data, indent=2, ensure_ascii=False)
+            parsed['text'] = clean_text(json.dumps(response_data, indent=2, ensure_ascii=False))
     
     return parsed
 
@@ -226,6 +258,12 @@ def display_message(role, content, timestamp, metadata=None):
     role_name = "คุณ" if role == "user" else "🤖 AI Agent"
     icon = "👤" if role == "user" else "🤖"
     
+    # ทำความสะอาดข้อความก่อนแสดงผล
+    clean_content = clean_text(content)
+    
+    # แปลง newlines เป็น <br> สำหรับ HTML
+    html_content = clean_content.replace('\n', '<br>')
+    
     # เตรียม metadata text
     meta_text = ""
     if metadata:
@@ -242,7 +280,7 @@ def display_message(role, content, timestamp, metadata=None):
             <span>{icon}</span>
             <span>{role_name}</span>
         </div>
-        <div class="message-content">{content}</div>
+        <div class="message-content">{html_content}</div>
         <div class="timestamp">{timestamp}{meta_text}</div>
     </div>
     """, unsafe_allow_html=True)
@@ -254,55 +292,66 @@ def display_sql_query(query):
     st.code(query, language='sql')
 
 # ฟังก์ชันแสดงข้อมูลในรูปแบบ DataFrame
-def display_data_table(data, title="📊 ผลลัพธ์จาก Database"):
-    """แสดงข้อมูลในรูปแบบตาราง"""
-    st.markdown(f"**{title}**")
-    
+def display_data_table(data):
+    """แสดงข้อมูลในรูปแบบ DataFrame พร้อม styling"""
     try:
         if isinstance(data, list) and len(data) > 0:
             df = pd.DataFrame(data)
-            st.dataframe(df, use_container_width=True)
-            
-            # เพิ่มปุ่ม download
-            csv = df.to_csv(index=False, encoding='utf-8-sig')
-            st.download_button(
-                label="📥 Download CSV",
-                data=csv,
-                file_name=f"query_results_{int(time.time())}.csv",
-                mime="text/csv"
+            st.markdown("**📊 ผลลัพธ์:**")
+            st.dataframe(
+                df,
+                use_container_width=True,
+                hide_index=False
             )
+            
+            # แสดงสถิติพื้นฐาน
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("จำนวนแถว", len(df))
+            with col2:
+                st.metric("จำนวนคอลัมน์", len(df.columns))
+            with col3:
+                st.metric("ขนาดข้อมูล", f"{df.memory_usage(deep=True).sum() / 1024:.1f} KB")
+                
         elif isinstance(data, dict):
+            st.markdown("**📊 ผลลัพธ์:**")
             st.json(data)
         else:
+            st.markdown("**📊 ผลลัพธ์:**")
             st.write(data)
+            
     except Exception as e:
         st.error(f"ไม่สามารถแสดงข้อมูลได้: {str(e)}")
         st.json(data)
 
-# ฟังก์ชัน export ประวัติ
+# ฟังก์ชัน Export Chat History
 def export_chat_history(messages):
-    """Export ประวัติการสนทนาเป็น CSV"""
-    export_data = []
+    """Export chat history เป็น CSV"""
+    data = []
     for msg in messages:
-        export_data.append({
-            'timestamp': msg['timestamp'],
-            'role': msg['role'],
-            'content': msg['content'],
-            'sql_query': msg.get('sql_query', ''),
-            'has_data': msg.get('has_data', False)
+        data.append({
+            'Timestamp': msg['timestamp'],
+            'Role': msg['role'],
+            'Content': msg['content'],
+            'SQL Query': msg.get('sql_query', ''),
+            'Has Data': msg.get('has_data', False)
         })
-    df = pd.DataFrame(export_data)
-    return df.to_csv(index=False, encoding='utf-8-sig')
+    
+    df = pd.DataFrame(data)
+    return df.to_csv(index=False).encode('utf-8-sig')
 
-# Initialize session state
+# Initialize Session State
 if 'messages' not in st.session_state:
     st.session_state.messages = []
+
+if 'webhook_url' not in st.session_state:
+    st.session_state.webhook_url = ""
 
 if 'SessionId' not in st.session_state:
     st.session_state.SessionId = f"session_{int(time.time())}"
 
-if 'webhook_url' not in st.session_state:
-    st.session_state.webhook_url = ""
+if 'is_processing' not in st.session_state:
+    st.session_state.is_processing = False
 
 if 'total_requests' not in st.session_state:
     st.session_state.total_requests = 0
@@ -313,33 +362,32 @@ if 'successful_requests' not in st.session_state:
 if 'total_queries' not in st.session_state:
     st.session_state.total_queries = 0
 
-if 'is_processing' not in st.session_state:
-    st.session_state.is_processing = False
-
 if 'database_context' not in st.session_state:
-    st.session_state.database_context = {}
+    st.session_state.database_context = None
 
 # Sidebar
 with st.sidebar:
-    st.markdown("### ⚙️ AI Agent Configuration")
+    st.title("⚙️ การตั้งค่า")
     
-    # Webhook URL
-    webhook_url_input = st.text_input(
-        "N8N Webhook URL",
+    # Webhook Configuration
+    st.markdown("### 🔗 N8N Webhook URL")
+    webhook_input = st.text_input(
+        "Webhook URL",
         value=st.session_state.webhook_url,
-        placeholder="https://your-n8n.com/webhook/ai-agent",
-        help="URL ของ AI Agent endpoint จาก n8n"
+        placeholder="https://your-n8n.app.n8n.cloud/webhook/...",
+        label_visibility="collapsed"
     )
     
-    if webhook_url_input != st.session_state.webhook_url:
-        st.session_state.webhook_url = webhook_url_input
+    if webhook_input != st.session_state.webhook_url:
+        st.session_state.webhook_url = webhook_input
+        st.success("✅ อัพเดท Webhook URL สำเร็จ!")
     
     st.markdown("---")
     
-    # Database Context Configuration
+    # Database Context
     st.markdown("### 🗄️ Database Context")
     
-    with st.expander("⚙️ ตั้งค่า Database Context"):
+    with st.expander("ตั้งค่า Database Info"):
         db_type = st.selectbox(
             "ประเภท Database",
             ["PostgreSQL", "MySQL", "SQLite", "MongoDB", "SQL Server", "Other"]
