@@ -327,25 +327,29 @@ def format_markdown_content(text):
     )
     
     # จัดการกับ QuickChart URLs ที่ caption และ URL แยกคนละบรรทัด
-    # Pattern: บรรทัดแรกเป็น caption, บรรทัดถัดไปเป็น encoded URL
+    # รองรับ URL ที่ยาวหลายบรรทัด
     def convert_caption_and_url(match):
         caption = match.group(1).strip()
-        url_part = match.group(2).strip()
+        url_parts = match.group(2).strip()
+        
+        # รวม URL ที่อาจถูกแบ่งเป็นหลายบรรทัด (ลบ newlines และ spaces)
+        url_parts = re.sub(r'\s+', '', url_parts)
         
         # เติม URL ส่วนหน้า
-        if not url_part.startswith('http'):
-            full_url = 'https://quickchart.io/chart?c=' + url_part
+        if not url_parts.startswith('http'):
+            full_url = 'https://quickchart.io/chart?c=' + url_parts
         else:
-            full_url = url_part
+            full_url = url_parts
         
         # ลบวงเล็บปิดท้าย ถ้ามี
         full_url = full_url.rstrip(')')
         
-        return f'<div style="margin: 1.5rem 0; text-align: center;"><img src="{full_url}" alt="{caption}" style="max-width: 100%; height: auto; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" /><div style="margin-top: 0.5rem; font-size: 0.9rem; color: #64748b; font-style: italic;">{caption}</div></div>'
+        return f'<div style="margin: 1.5rem 0; text-align: center;"><img src="{full_url}" alt="{caption}" style="max-width: 100%; height: auto; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" onerror="this.style.display=\'none\'; this.nextElementSibling.innerHTML=\'⚠️ ไม่สามารถโหลดกราฟได้ กรุณาตรวจสอบข้อมูล\';" /><div style="margin-top: 0.5rem; font-size: 0.9rem; color: #64748b; font-style: italic;">{caption}</div></div>'
     
-    # จับ pattern: บรรทัดข้อความ + บรรทัด URL ที่ encode
+    # จับ pattern: บรรทัดข้อความ (caption) ตามด้วย encoded URL (อาจหลายบรรทัด)
+    # Pattern นี้จะจับทุกอย่างที่เป็น encoded characters จนกว่าจะเจอบรรทัดว่างหรือจบข้อความ
     text = re.sub(
-        r'^([^\n%]+)\n([%\w\d\-_\.]+%[%\w\d\-_\.\:\,\{\}\[\]\(\)]+\)?)$',
+        r'^([^\n%\|#]+)\n+([%\w\d\-_\.\:\,\{\}\[\]\(\)]+(?:\n[%\w\d\-_\.\:\,\{\}\[\]\(\)]+)*)\)?$',
         convert_caption_and_url,
         text,
         flags=re.MULTILINE
