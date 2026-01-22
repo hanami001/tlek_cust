@@ -15,90 +15,121 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS ที่ปรับปรุงแล้วพร้อม Noto Sans Thai และ UI สวยงาม
+# CSS ที่ปรับปรุงแล้ว - เพิ่ม Noto Sans Thai และ Modern UI/UX
 st.markdown("""
 <style>
-    /* Import Google Font - Noto Sans Thai */
+    /* Import Noto Sans Thai from Google Fonts */
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap');
     
-    /* Global Font Settings */
+    /* Global Font */
     * {
-        font-family: 'Noto Sans Thai', sans-serif !important;
+        font-family: 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
     }
     
-    html, body, [class*="css"] {
-        font-family: 'Noto Sans Thai', sans-serif !important;
+    /* Hide Streamlit Elements */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+        border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(180deg, #764ba2 0%, #667eea 100%);
     }
     
     /* Main Container Styling */
     .main {
-        background: linear-gradient(135deg, #f5f7fa 0%, #e8eef5 100%);
+        background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
     }
     
-    /* Sidebar Styling */
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #1e3a8a 0%, #1e40af 100%);
-        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    /* Title Styling */
+    h1 {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 700 !important;
+        letter-spacing: -0.5px;
+        margin-bottom: 0.5rem !important;
     }
     
-    [data-testid="stSidebar"] * {
-        color: white !important;
-    }
-    
-    [data-testid="stSidebar"] .stMarkdown {
-        color: white !important;
-    }
-    
-    /* Chat Message Styles */
+    /* Chat Message Containers */
     .chat-message {
         padding: 1.5rem;
         border-radius: 1rem;
         margin-bottom: 1.5rem;
         display: flex;
         flex-direction: column;
-        animation: slideIn 0.4s ease-out;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-        backdrop-filter: blur(10px);
+        animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: 1px solid rgba(255,255,255,0.3);
     }
     
     .chat-message:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.12);
     }
     
     @keyframes slideIn {
         from { 
             opacity: 0; 
-            transform: translateX(-20px);
+            transform: translateY(20px) scale(0.95);
         }
         to { 
             opacity: 1; 
-            transform: translateX(0);
+            transform: translateY(0) scale(1);
         }
     }
     
+    /* User Message */
     .user-message {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         margin-left: 10%;
-        border-bottom-right-radius: 0.3rem;
+        position: relative;
+        overflow: hidden;
     }
     
+    .user-message::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(45deg, transparent 0%, rgba(255,255,255,0.1) 100%);
+        pointer-events: none;
+    }
+    
+    /* Bot Message */
     .bot-message {
         background: white;
         margin-right: 10%;
-        border-bottom-left-radius: 0.3rem;
-        border-left: 4px solid #667eea;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
     }
     
+    /* Message Header */
     .message-header {
         font-weight: 600;
         margin-bottom: 0.75rem;
         font-size: 0.95rem;
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: 0.5rem;
         letter-spacing: 0.3px;
     }
     
@@ -107,14 +138,16 @@ st.markdown("""
     }
     
     .bot-message .message-header {
-        color: #1e3a8a;
+        color: #2d3748;
     }
     
+    /* Message Content */
     .message-content {
         font-size: 1.05rem;
-        line-height: 1.8;
+        line-height: 1.7;
         white-space: pre-wrap;
         word-wrap: break-word;
+        color: #2d3748;
         font-weight: 400;
     }
     
@@ -122,26 +155,23 @@ st.markdown("""
         color: white;
     }
     
-    .bot-message .message-content {
-        color: #334155;
-    }
-    
+    /* Timestamp */
     .timestamp {
         font-size: 0.8rem;
         margin-top: 0.75rem;
-        opacity: 0.75;
-        font-weight: 300;
+        opacity: 0.7;
+        font-weight: 400;
     }
     
-    /* Badge Styles */
+    /* Badges */
     .query-badge {
         background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
         color: white;
-        padding: 0.4rem 1rem;
-        border-radius: 1.5rem;
-        font-size: 0.85rem;
+        padding: 0.35rem 0.85rem;
+        border-radius: 2rem;
+        font-size: 0.8rem;
         display: inline-block;
-        margin-top: 0.75rem;
+        margin-top: 0.5rem;
         font-weight: 500;
         box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
     }
@@ -149,169 +179,166 @@ st.markdown("""
     .data-badge {
         background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         color: white;
-        padding: 0.4rem 1rem;
-        border-radius: 1.5rem;
-        font-size: 0.85rem;
+        padding: 0.35rem 0.85rem;
+        border-radius: 2rem;
+        font-size: 0.8rem;
         display: inline-block;
-        margin-top: 0.75rem;
+        margin-top: 0.5rem;
         font-weight: 500;
         box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
     }
     
-    /* DataFrame Styling */
+    /* Sidebar Styling */
+    section[data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
+        border-right: 1px solid rgba(102, 126, 234, 0.1);
+    }
+    
+    section[data-testid="stSidebar"] h1,
+    section[data-testid="stSidebar"] h2,
+    section[data-testid="stSidebar"] h3 {
+        color: #2d3748 !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Buttons */
+    .stButton button {
+        border-radius: 0.75rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border: none;
+        font-family: 'Noto Sans Thai', sans-serif !important;
+    }
+    
+    .stButton button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+    }
+    
+    /* Primary Button */
+    .stButton button[kind="primary"] {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    /* Text Input & Text Area */
+    .stTextInput input,
+    .stTextArea textarea {
+        border-radius: 0.75rem;
+        border: 2px solid #e2e8f0;
+        font-family: 'Noto Sans Thai', sans-serif !important;
+        transition: all 0.3s ease;
+    }
+    
+    .stTextInput input:focus,
+    .stTextArea textarea:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    /* Select Box */
+    .stSelectbox select {
+        border-radius: 0.75rem;
+        border: 2px solid #e2e8f0;
+        font-family: 'Noto Sans Thai', sans-serif !important;
+    }
+    
+    /* Metrics */
+    [data-testid="stMetricValue"] {
+        font-size: 1.75rem !important;
+        font-weight: 700 !important;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    
+    /* Info/Warning/Success Boxes */
+    .stAlert {
+        border-radius: 0.75rem;
+        border: none;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        font-family: 'Noto Sans Thai', sans-serif !important;
+    }
+    
+    /* Code Block */
+    .stCodeBlock {
+        border-radius: 0.75rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        font-family: 'Noto Sans Thai', 'Consolas', 'Monaco', monospace !important;
+    }
+    
+    /* DataFrame */
     .stDataFrame {
-        margin-top: 1.5rem;
+        margin-top: 1rem;
         border-radius: 0.75rem;
         overflow: hidden;
         box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     }
     
-    /* Button Styling */
-    .stButton > button {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    /* Expander */
+    .streamlit-expanderHeader {
+        font-weight: 600;
+        border-radius: 0.75rem;
+        background: white;
+        font-family: 'Noto Sans Thai', sans-serif !important;
+    }
+    
+    /* Download Button */
+    .stDownloadButton button {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         color: white;
-        border: none;
-        border-radius: 0.75rem;
-        padding: 0.75rem 1.5rem;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
     }
     
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
-    }
-    
-    /* Input Styling */
-    .stTextInput > div > div > input,
-    .stTextArea > div > div > textarea {
-        border-radius: 0.75rem;
-        border: 2px solid #e2e8f0;
-        padding: 1rem;
-        font-size: 1rem;
-        transition: all 0.3s ease;
-    }
-    
-    .stTextInput > div > div > input:focus,
-    .stTextArea > div > div > textarea:focus {
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-    
-    /* Metric Styling */
-    [data-testid="stMetricValue"] {
-        font-size: 2rem;
-        font-weight: 700;
-        color: #1e3a8a;
-    }
-    
-    [data-testid="stMetricLabel"] {
-        font-weight: 600;
-        color: #64748b;
-        font-size: 0.95rem;
-    }
-    
-    /* Code Block Styling */
-    code {
-        background: #f1f5f9;
-        padding: 0.25rem 0.5rem;
-        border-radius: 0.375rem;
-        font-family: 'Courier New', monospace !important;
-    }
-    
-    pre {
-        background: #1e293b;
-        border-radius: 0.75rem;
+    /* Form Container */
+    .stForm {
+        background: white;
         padding: 1.5rem;
-        overflow-x: auto;
+        border-radius: 1rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        border: 1px solid rgba(102, 126, 234, 0.1);
     }
     
-    /* Title Styling */
-    h1 {
-        color: #1e3a8a;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-        letter-spacing: -0.5px;
+    /* Welcome Card */
+    .welcome-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 1rem;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+        border-left: 4px solid #667eea;
+        margin-bottom: 2rem;
     }
     
-    h2 {
-        color: #1e40af;
+    .welcome-card h4 {
+        color: #667eea;
         font-weight: 600;
-        margin-top: 2rem;
         margin-bottom: 1rem;
     }
     
-    h3 {
-        color: #3730a3;
-        font-weight: 600;
-        margin-top: 1.5rem;
-        margin-bottom: 0.75rem;
+    .welcome-card ul {
+        list-style: none;
+        padding-left: 0;
     }
     
-    /* Info Box Styling */
-    .stAlert {
-        border-radius: 0.75rem;
-        border: none;
+    .welcome-card li {
+        padding: 0.5rem 0;
+        color: #4a5568;
+    }
+    
+    /* Footer */
+    .footer {
+        text-align: center;
+        color: #718096;
+        padding: 2rem 1rem;
+        background: white;
+        border-radius: 1rem;
+        margin-top: 2rem;
         box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
     
-    /* Expander Styling */
-    .streamlit-expanderHeader {
-        background: white;
-        border-radius: 0.75rem;
+    .footer strong {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
         font-weight: 600;
-        color: #1e3a8a;
-    }
-    
-    /* Select Box Styling */
-    .stSelectbox > div > div {
-        border-radius: 0.75rem;
-        border: 2px solid #e2e8f0;
-    }
-    
-    /* Download Button Styling */
-    .stDownloadButton > button {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        color: white;
-        border-radius: 0.75rem;
-        font-weight: 600;
-        border: none;
-        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-    }
-    
-    .stDownloadButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
-    }
-    
-    /* Spinner Styling */
-    .stSpinner > div {
-        border-color: #667eea !important;
-    }
-    
-    /* Divider Styling */
-    hr {
-        margin: 2rem 0;
-        border: none;
-        border-top: 2px solid #e2e8f0;
-        opacity: 0.5;
-    }
-    
-    /* Card Effect for Containers */
-    .element-container {
-        transition: all 0.3s ease;
-    }
-    
-    /* Footer Styling */
-    .footer {
-        background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
-        color: white;
-        padding: 2rem;
-        border-radius: 1rem;
-        text-align: center;
-        margin-top: 3rem;
-        box-shadow: 0 4px 20px rgba(30, 58, 138, 0.2);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -320,17 +347,14 @@ st.markdown("""
 if 'messages' not in st.session_state:
     st.session_state.messages = []
 
-if 'webhook_url' not in st.session_state:
-    st.session_state.webhook_url = ""
-
 if 'SessionId' not in st.session_state:
     st.session_state.SessionId = f"session_{int(time.time())}"
 
+if 'webhook_url' not in st.session_state:
+    st.session_state.webhook_url = ""
+
 if 'is_processing' not in st.session_state:
     st.session_state.is_processing = False
-
-if 'database_context' not in st.session_state:
-    st.session_state.database_context = {}
 
 if 'total_requests' not in st.session_state:
     st.session_state.total_requests = 0
@@ -340,6 +364,9 @@ if 'successful_requests' not in st.session_state:
 
 if 'total_queries' not in st.session_state:
     st.session_state.total_queries = 0
+
+if 'database_context' not in st.session_state:
+    st.session_state.database_context = {}
 
 # ฟังก์ชันสำหรับ parse response จาก AI Agent
 def parse_agent_response(response_data):
@@ -421,13 +448,13 @@ def send_to_ai_agent(webhook_url, message, session_id=None, context=None):
             "Content-Type": "application/json"
         }
         
-        with st.spinner('🤖 AI Agent กำลังคิด...'):
+        with st.spinner('🤖 AI Agent กำลังประมวลผล...'):
             start_time = time.time()
             response = requests.post(
                 webhook_url,
                 json=payload,
                 headers=headers,
-                timeout=60  # เพิ่ม timeout สำหรับ database queries
+                timeout=60
             )
             response_time = time.time() - start_time
         
@@ -484,13 +511,16 @@ def display_message(role, content, timestamp, metadata=None):
         if metadata.get('has_data'):
             meta_text += " • 📊 Data"
     
+    # Escape HTML in content
+    safe_content = content.replace('<', '&lt;').replace('>', '&gt;')
+    
     st.markdown(f"""
     <div class="chat-message {message_class}">
         <div class="message-header">
             <span>{icon}</span>
             <span>{role_name}</span>
         </div>
-        <div class="message-content">{content}</div>
+        <div class="message-content">{safe_content}</div>
         <div class="timestamp">{timestamp}{meta_text}</div>
     </div>
     """, unsafe_allow_html=True)
@@ -505,57 +535,65 @@ def display_sql_query(query):
 def display_data_table(data):
     """แสดงข้อมูลในรูปแบบ DataFrame"""
     try:
-        if isinstance(data, list) and len(data) > 0:
-            df = pd.DataFrame(data)
-            st.markdown("**📊 ข้อมูลที่ได้:**")
-            st.dataframe(df, use_container_width=True)
-            
-            # แสดงสถิติเพิ่มเติม
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("จำนวนแถว", len(df))
-            with col2:
-                st.metric("จำนวนคอลัมน์", len(df.columns))
-            with col3:
-                st.metric("ขนาดข้อมูล", f"{df.memory_usage(deep=True).sum() / 1024:.2f} KB")
+        if isinstance(data, list):
+            if len(data) > 0:
+                df = pd.DataFrame(data)
+                st.markdown("**📊 ผลลัพธ์:**")
+                st.dataframe(
+                    df,
+                    use_container_width=True,
+                    hide_index=True
+                )
+                
+                # แสดงสถิติพื้นฐาน
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("จำนวนแถว", len(df))
+                with col2:
+                    st.metric("จำนวนคอลัมน์", len(df.columns))
+                with col3:
+                    st.metric("ขนาดข้อมูล", f"{df.memory_usage(deep=True).sum() / 1024:.1f} KB")
+            else:
+                st.info("📭 ไม่พบข้อมูล")
         elif isinstance(data, dict):
-            st.markdown("**📊 ข้อมูลที่ได้:**")
-            st.json(data)
+            df = pd.DataFrame([data])
+            st.markdown("**📊 ผลลัพธ์:**")
+            st.dataframe(
+                df,
+                use_container_width=True,
+                hide_index=True
+            )
         else:
-            st.markdown("**📊 ข้อมูลที่ได้:**")
-            st.write(data)
+            st.warning("⚠️ รูปแบบข้อมูลไม่รองรับ")
     except Exception as e:
-        st.warning(f"⚠️ ไม่สามารถแสดงข้อมูลในรูปแบบตารางได้: {str(e)}")
-        st.json(data)
+        st.error(f"❌ ไม่สามารถแสดงข้อมูล: {str(e)}")
 
-# ฟังก์ชัน export ประวัติการสนทนา
+# ฟังก์ชัน Export Chat History
 def export_chat_history(messages):
     """Export ประวัติการสนทนาเป็น CSV"""
-    data = []
-    for msg in messages:
-        data.append({
-            'Timestamp': msg['timestamp'],
-            'Role': msg['role'],
-            'Content': msg['content'],
-            'Has_SQL': 'Yes' if msg.get('sql_query') else 'No',
-            'Has_Data': 'Yes' if msg.get('data') else 'No'
-        })
-    
-    df = pd.DataFrame(data)
-    return df.to_csv(index=False, encoding='utf-8-sig')
+    try:
+        data = []
+        for msg in messages:
+            data.append({
+                'Timestamp': msg['timestamp'],
+                'Role': msg['role'],
+                'Content': msg['content'],
+                'SQL_Query': msg.get('sql_query', ''),
+                'Has_Data': 'Yes' if msg.get('data') else 'No'
+            })
+        
+        df = pd.DataFrame(data)
+        return df.to_csv(index=False, encoding='utf-8-sig')
+    except Exception as e:
+        return f"Error: {str(e)}"
 
-# ========================================
-# SIDEBAR
-# ========================================
+# Sidebar
 with st.sidebar:
-    st.markdown("## ⚙️ การตั้งค่า")
-    st.markdown("---")
+    st.markdown("### ⚙️ การตั้งค่า")
     
     # Webhook URL
-    st.markdown("### 🔗 N8N Webhook")
-    
     webhook_url = st.text_input(
-        "Webhook URL",
+        "N8N Webhook URL",
         value=st.session_state.webhook_url,
         placeholder="https://your-n8n-instance.com/webhook/...",
         help="URL ของ N8N Webhook ที่เชื่อมต่อกับ AI Agent"
@@ -564,14 +602,12 @@ with st.sidebar:
     if webhook_url != st.session_state.webhook_url:
         st.session_state.webhook_url = webhook_url
         if webhook_url:
-            st.success("✅ บันทึก Webhook URL แล้ว")
+            st.success("✅ บันทึก Webhook URL สำเร็จ!")
     
     st.markdown("---")
     
     # Database Context
-    st.markdown("### 🗄️ Database Context")
-    
-    with st.expander("📝 ตั้งค่า Database", expanded=False):
+    with st.expander("🗄️ Database Context"):
         db_type = st.selectbox(
             "ประเภท Database",
             ["PostgreSQL", "MySQL", "SQLite", "MongoDB", "SQL Server", "Other"]
@@ -613,7 +649,7 @@ with st.sidebar:
     
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("🔄 New Session", use_container_width=True):
+        if st.button("🔄 New", use_container_width=True):
             st.session_state.SessionId = f"session_{int(time.time())}"
             st.session_state.messages = []
             st.session_state.total_requests = 0
@@ -622,7 +658,7 @@ with st.sidebar:
             st.rerun()
     
     with col2:
-        if st.button("🗑️ Clear Chat", use_container_width=True):
+        if st.button("🗑️ Clear", use_container_width=True):
             st.session_state.messages = []
             st.rerun()
     
@@ -649,9 +685,9 @@ with st.sidebar:
     if st.session_state.messages:
         csv_data = export_chat_history(st.session_state.messages)
         st.download_button(
-            label="📥 Download History (CSV)",
+            label="📥 Download CSV",
             data=csv_data,
-            file_name=f"ai_agent_chat_{st.session_state.SessionId}.csv",
+            file_name=f"ai_chat_{st.session_state.SessionId}.csv",
             mime="text/csv",
             use_container_width=True
         )
@@ -674,42 +710,40 @@ with st.sidebar:
         - สรุปประสิทธิภาพสินค้า
         """)
 
-# ========================================
-# MAIN AREA
-# ========================================
+# Main Area
 st.title("🤖 AI Agent: Chat with Database")
-st.markdown("### ระบบ AI Agent ที่ช่วยคุณสนทนากับ Database ผ่านภาษาธรรมชาติ")
+st.markdown("ระบบ AI Agent ที่ช่วยคุณสนทนากับ Database ผ่านภาษาธรรมชาติ")
 
 # Warning
 if not st.session_state.webhook_url:
     st.warning("⚠️ กรุณาใส่ N8N Webhook URL ในแถบด้านซ้าย")
-    
-    st.info("""
-    **📝 การตั้งค่า AI Agent:**
-    
-    1. สร้าง n8n workflow สำหรับ AI Agent
-    2. เชื่อมต่อกับ Database (PostgreSQL, MySQL, etc.)
-    3. เพิ่ม AI Model (OpenAI, Claude, etc.)
-    4. คัดลอก Webhook URL มาใส่ที่นี่
-    """)
+    st.markdown("""
+    <div class="welcome-card">
+        <h4>📚 การตั้งค่า AI Agent</h4>
+        <ul>
+            <li>✅ สร้าง n8n workflow สำหรับ AI Agent</li>
+            <li>✅ เชื่อมต่อกับ Database (PostgreSQL, MySQL, etc.)</li>
+            <li>✅ เพิ่ม AI Model (OpenAI, Claude, etc.)</li>
+            <li>✅ คัดลอก Webhook URL มาใส่ที่นี่</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
 
 # Chat Container
 chat_container = st.container()
 with chat_container:
     if not st.session_state.messages:
         st.markdown("""
-        <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                    padding: 2rem; border-radius: 1rem; color: white; 
-                    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);'>
-            <h2 style='color: white; margin-top: 0;'>👋 ยินดีต้อนรับสู่ AI Agent Chat!</h2>
-            <p style='font-size: 1.1rem; line-height: 1.8; color: rgba(255,255,255,0.95);'>
-                ฉันสามารถช่วยคุณ:<br><br>
-                🔍 Query ข้อมูลจาก Database ด้วยภาษาธรรมชาติ<br>
-                📊 วิเคราะห์และสรุปข้อมูล<br>
-                📈 สร้างรายงานและ insights<br>
-                💡 แนะนำ optimizations<br><br>
-                <strong>เริ่มต้นโดยพิมพ์คำถามของคุณด้านล่าง! 👇</strong>
-            </p>
+        <div class="welcome-card">
+            <h4>👋 ยินดีต้อนรับสู่ AI Agent Chat!</h4>
+            <p style="margin-bottom: 1rem; color: #4a5568;">ฉันสามารถช่วยคุณ:</p>
+            <ul>
+                <li>🔍 Query ข้อมูลจาก Database ด้วยภาษาธรรมชาติ</li>
+                <li>📊 วิเคราะห์และสรุปข้อมูล</li>
+                <li>📈 สร้างรายงานและ insights</li>
+                <li>💡 แนะนำ optimizations</li>
+            </ul>
+            <p style="margin-top: 1rem; color: #667eea; font-weight: 500;">เริ่มต้นโดยพิมพ์คำถามของคุณด้านล่าง!</p>
         </div>
         """, unsafe_allow_html=True)
     else:
@@ -734,7 +768,6 @@ with chat_container:
             st.markdown("<div style='margin: 1rem 0;'></div>", unsafe_allow_html=True)
 
 # Input Area
-st.markdown("---")
 st.markdown("### 💬 พิมพ์คำถามของคุณ")
 
 with st.form(key="chat_form", clear_on_submit=True):
@@ -829,13 +862,9 @@ if send_button and user_input.strip():
 # Footer
 st.markdown("---")
 st.markdown("""
-<div class='footer'>
-    <h3 style='color: white; margin-top: 0;'>🤖 AI Agent Chat with Database</h3>
-    <p style='color: rgba(255,255,255,0.9); margin-bottom: 0;'>
-        Powered by Streamlit + N8N + AI | Natural Language to SQL
-    </p>
-    <p style='color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-top: 0.5rem;'>
-        สร้างด้วย ❤️ และ AI Technology
-    </p>
+<div class="footer">
+    <strong>🤖 AI Agent Chat with Database</strong><br>
+    Powered by Streamlit + N8N + AI | Natural Language to SQL<br>
+    <small style="color: #a0aec0;">Made with ❤️ using Noto Sans Thai</small>
 </div>
 """, unsafe_allow_html=True)
