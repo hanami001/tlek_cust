@@ -259,167 +259,6 @@ def clean_text(text):
     
     return text
 
-# ฟังก์ชันแปลง markdown เป็น HTML ที่สวยงาม
-def format_markdown_content(text):
-    """
-    แปลง markdown text เป็น HTML พร้อม styling
-    """
-    if not text:
-        return ""
-    
-    # ทำความสะอาดข้อความก่อน
-    text = clean_text(text)
-    
-    # แปลง markdown tables เป็น HTML tables
-    def convert_markdown_table(match):
-        table_text = match.group(0)
-        lines = [line.strip() for line in table_text.strip().split('\n') if line.strip()]
-        
-        if len(lines) < 2:
-            return table_text
-        
-        # แยก header และ rows
-        header_line = lines[0]
-        separator_line = lines[1] if len(lines) > 1 else None
-        data_lines = lines[2:] if len(lines) > 2 else []
-        
-        # ตรวจสอบว่าเป็น markdown table จริงหรือไม่
-        if not separator_line or not re.match(r'\|[\s\-:]+\|', separator_line):
-            return table_text
-        
-        # Parse header
-        headers = [col.strip() for col in header_line.split('|') if col.strip()]
-        
-        # สร้าง HTML table
-        html = '<table style="width:100%; border-collapse: collapse; margin: 1rem 0; background: white; border-radius: 0.5rem; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">'
-        
-        # Header
-        html += '<thead><tr style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">'
-        for header in headers:
-            html += f'<th style="color: white; padding: 0.75rem; text-align: left; font-weight: 600; font-family: \'Noto Sans Thai\', sans-serif;">{header}</th>'
-        html += '</tr></thead>'
-        
-        # Body
-        html += '<tbody>'
-        for idx, line in enumerate(data_lines):
-            cols = [col.strip() for col in line.split('|') if col.strip()]
-            if not cols:
-                continue
-            
-            bg_color = '#f9fafb' if idx % 2 == 1 else 'white'
-            html += f'<tr style="background: {bg_color};">'
-            for col in cols:
-                html += f'<td style="padding: 0.75rem; border-bottom: 1px solid #e5e7eb; font-family: \'Noto Sans Thai\', sans-serif;">{col}</td>'
-            html += '</tr>'
-        html += '</tbody></table>'
-        
-        # เพิ่ม CSS สำหรับ hover
-        html += '<style>table tbody tr:hover { background: #e5e7eb !important; transition: background 0.2s ease; }</style>'
-        
-        return html
-    
-    # จับ markdown table pattern (ต้องมีอย่างน้อย 2 บรรทัด และมี separator)
-    text = re.sub(
-        r'(?:^\|.+\|\s*$\n)+',
-        convert_markdown_table,
-        text,
-        flags=re.MULTILINE
-    )
-    
-    # จัดการกับ QuickChart URLs ที่ caption และ URL แยกคนละบรรทัด
-    # รองรับ URL ที่ยาวหลายบรรทัด
-    def convert_caption_and_url(match):
-        caption = match.group(1).strip()
-        url_parts = match.group(2).strip()
-        
-        # รวม URL ที่อาจถูกแบ่งเป็นหลายบรรทัด (ลบ newlines และ spaces)
-        url_parts = re.sub(r'\s+', '', url_parts)
-        
-        # เติม URL ส่วนหน้า
-        if not url_parts.startswith('http'):
-            full_url = 'https://quickchart.io/chart?c=' + url_parts
-        else:
-            full_url = url_parts
-        
-        # ลบวงเล็บปิดท้าย ถ้ามี
-        full_url = full_url.rstrip(')')
-        
-        return f'<div style="margin: 1.5rem 0; text-align: center;"><img src="{full_url}" alt="{caption}" style="max-width: 100%; height: auto; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" onerror="this.style.display=\'none\'; this.nextElementSibling.innerHTML=\'⚠️ ไม่สามารถโหลดกราฟได้ กรุณาตรวจสอบข้อมูล\';" /><div style="margin-top: 0.5rem; font-size: 0.9rem; color: #64748b; font-style: italic;">{caption}</div></div>'
-    
-    # จับ pattern: บรรทัดข้อความ (caption) ตามด้วย encoded URL (อาจหลายบรรทัด)
-    # Pattern นี้จะจับทุกอย่างที่เป็น encoded characters จนกว่าจะเจอบรรทัดว่างหรือจบข้อความ
-    text = re.sub(
-        r'^([^\n%\|#]+)\n+([%\w\d\-_\.\:\,\{\}\[\]\(\)]+(?:\n[%\w\d\-_\.\:\,\{\}\[\]\(\)]+)*)\)?$',
-        convert_caption_and_url,
-        text,
-        flags=re.MULTILINE
-    )
-    
-    # แปลง markdown images ![alt](url) เป็น HTML img tag
-    # รองรับทั้ง QuickChart และ image URLs อื่นๆ
-    def convert_image(match):
-        alt_text = match.group(1)
-        img_url = match.group(2)
-        
-        # แก้ไข URL ที่ไม่สมบูรณ์ (ขาดส่วนหน้า)
-        if img_url.startswith('%') or (not img_url.startswith('http') and not img_url.startswith('//')):
-            # ถ้าดูเหมือน QuickChart URL ที่ขาดส่วนหน้า
-            if '%22' in img_url or '%3A' in img_url:
-                img_url = 'https://quickchart.io/chart?c=' + img_url
-        
-        return f'<div style="margin: 1.5rem 0; text-align: center;"><img src="{img_url}" alt="{alt_text}" style="max-width: 100%; height: auto; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" /><div style="margin-top: 0.5rem; font-size: 0.9rem; color: #64748b; font-style: italic;">{alt_text}</div></div>'
-    
-    text = re.sub(r'!\[([^\]]*)\]\(([^\)]+)\)', convert_image, text)
-    
-    # แปลง markdown headers (##, ###)
-    text = re.sub(r'^### (.+)$', r'<h3>\1</h3>', text, flags=re.MULTILINE)
-    text = re.sub(r'^## (.+)$', r'<h2>\1</h2>', text, flags=re.MULTILINE)
-    text = re.sub(r'^# (.+)$', r'<h1>\1</h1>', text, flags=re.MULTILINE)
-    
-    # แปลง **bold** text
-    text = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', text)
-    
-    # แปลง bullet lists (- หรือ *)
-    def convert_list(match):
-        items = match.group(0)
-        lines = items.strip().split('\n')
-        html_items = []
-        for line in lines:
-            item_text = re.sub(r'^[\-\*]\s+', '', line)
-            html_items.append(f'<li>{item_text}</li>')
-        return '<ul>' + ''.join(html_items) + '</ul>'
-    
-    # จับ bullet list ที่ติดกัน
-    text = re.sub(r'(?:^[\-\*]\s+.+$\n?)+', convert_list, text, flags=re.MULTILINE)
-    
-    # แปลง numbered lists
-    def convert_numbered_list(match):
-        items = match.group(0)
-        lines = items.strip().split('\n')
-        html_items = []
-        for line in lines:
-            item_text = re.sub(r'^\d+\.\s+', '', line)
-            html_items.append(f'<li>{item_text}</li>')
-        return '<ol>' + ''.join(html_items) + '</ol>'
-    
-    text = re.sub(r'(?:^\d+\.\s+.+$\n?)+', convert_numbered_list, text, flags=re.MULTILINE)
-    
-    # แปลง emojis พิเศษเป็น styled boxes
-    # ⚠️ warning
-    text = re.sub(r'⚠️\s*(.+?)(?=\n|$)', r'<div class="warning-box">⚠️ \1</div>', text)
-    # ✅ success
-    text = re.sub(r'✅\s*(.+?)(?=\n|$)', r'<div class="success-box">✅ \1</div>', text)
-    # 📊 info/stats
-    text = re.sub(r'📊\s*(.+?)(?=\n|$)', r'<div class="highlight-box">📊 \1</div>', text)
-    
-    # แปลง code blocks
-    text = re.sub(r'`([^`]+)`', r'<code>\1</code>', text)
-    
-    # แปลง line breaks ปกติเป็น <br>
-    text = text.replace('\n', '<br>')
-    
-    return text
-
 # ฟังก์ชันสำหรับ parse response จาก AI Agent
 def parse_agent_response(response_data):
     """
@@ -553,14 +392,6 @@ def display_message(role, content, timestamp, metadata=None):
     role_name = "คุณ" if role == "user" else "🤖 AI Agent"
     icon = "👤" if role == "user" else "🤖"
     
-    # สำหรับ bot message ใช้ markdown formatting
-    if role == "bot":
-        html_content = format_markdown_content(content)
-    else:
-        # สำหรับ user message ใช้แค่ clean text
-        clean_content = clean_text(content)
-        html_content = clean_content.replace('\n', '<br>')
-    
     # เตรียม metadata text
     meta_text = ""
     if metadata:
@@ -571,16 +402,85 @@ def display_message(role, content, timestamp, metadata=None):
         if metadata.get('has_data'):
             meta_text += " • 📊 Data"
     
+    # สำหรับ bot message ตรวจสอบว่ามี QuickChart URL หรือรูปภาพหรือไม่
+    image_urls = []
+    clean_content = content
+    
+    if role == "bot":
+        # ตรวจจับ markdown image syntax: ![alt](url)
+        markdown_images = re.findall(r'!\[([^\]]*)\]\(([^\)]+)\)', content)
+        for alt_text, img_url in markdown_images:
+            # แก้ไข URL ที่ไม่สมบูรณ์
+            if img_url.startswith('%') or (not img_url.startswith('http') and '%22' in img_url):
+                img_url = 'https://quickchart.io/chart?c=' + img_url
+            image_urls.append((alt_text, img_url))
+            # ลบ markdown syntax ออกจาก content
+            clean_content = clean_content.replace(f'![{alt_text}]({img_url})', '')
+        
+        # ตรวจจับ URL ธรรมดาที่เป็น QuickChart (ขึ้นต้นด้วย http หรือ encoded)
+        lines = content.split('\n')
+        caption_for_next_url = None
+        i = 0
+        while i < len(lines):
+            line = lines[i].strip()
+            
+            # ถ้าเป็นบรรทัด URL
+            if line.startswith('http') or (line.startswith('%') and '%22' in line):
+                # รวม URL หลายบรรทัด
+                full_url = line
+                j = i + 1
+                while j < len(lines) and (lines[j].strip().startswith('%') or re.match(r'^[%\w\d\-_\.\:\,\{\}\[\]\(\)]+$', lines[j].strip())):
+                    full_url += lines[j].strip()
+                    j += 1
+                
+                # ลบ whitespace ใน URL
+                full_url = re.sub(r'\s+', '', full_url)
+                
+                # แก้ไข URL ถ้าไม่สมบูรณ์
+                if not full_url.startswith('http'):
+                    full_url = 'https://quickchart.io/chart?c=' + full_url
+                
+                # ใช้ caption จากบรรทัดก่อนหน้า (ถ้ามี)
+                caption = caption_for_next_url if caption_for_next_url else "Chart"
+                image_urls.append((caption, full_url.rstrip(')')))
+                
+                # ลบบรรทัด URL ออกจาก content
+                for k in range(i, j):
+                    clean_content = clean_content.replace(lines[k], '')
+                if caption_for_next_url:
+                    clean_content = clean_content.replace(caption_for_next_url, '')
+                
+                caption_for_next_url = None
+                i = j
+            else:
+                # อาจเป็น caption สำหรับรูปถัดไป
+                if line and not line.startswith('#') and not line.startswith('-') and not line.startswith('*'):
+                    caption_for_next_url = line
+                i += 1
+    
+    # ทำความสะอาด content
+    clean_content = clean_text(clean_content)
+    
+    # แสดง message box
     st.markdown(f"""
     <div class="chat-message {message_class}">
         <div class="message-header">
             <span>{icon}</span>
             <span>{role_name}</span>
         </div>
-        <div class="message-content">{html_content}</div>
+        <div class="message-content">{clean_content}</div>
         <div class="timestamp">{timestamp}{meta_text}</div>
     </div>
     """, unsafe_allow_html=True)
+    
+    # แสดงรูปภาพ (ถ้ามี) ใช้ st.image แทน HTML
+    for alt_text, img_url in image_urls:
+        try:
+            st.image(img_url, caption=alt_text, use_container_width=True)
+        except Exception as e:
+            st.warning(f"⚠️ ไม่สามารถโหลดกราฟได้: {alt_text}")
+            with st.expander("ดู URL"):
+                st.code(img_url)
 
 # ฟังก์ชันแสดง SQL Query
 def display_sql_query(query):
