@@ -493,25 +493,79 @@ def display_data_table(data):
     try:
         if isinstance(data, list) and len(data) > 0:
             df = pd.DataFrame(data)
-            st.markdown("**📊 ผลลัพธ์:**")
-            st.dataframe(
-                df,
-                use_container_width=True,
-                hide_index=False
-            )
             
-            # แสดงสถิติพื้นฐาน
+            # สร้าง HTML table
+            st.markdown("**📊 ผลลัพธ์จากฐานข้อมูล:**")
+            
+            # สร้าง HTML table header
+            html_table = '<table style="width:100%; border-collapse: collapse; margin: 1rem 0; background: white; border-radius: 0.5rem; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">'
+            
+            # Header row
+            html_table += '<thead><tr style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">'
+            for col in df.columns:
+                html_table += f'<th style="color: white; padding: 0.75rem; text-align: left; font-weight: 600; font-family: \'Noto Sans Thai\', sans-serif;">{col}</th>'
+            html_table += '</tr></thead>'
+            
+            # Body rows
+            html_table += '<tbody>'
+            for idx, row in df.iterrows():
+                row_style = 'background: #f9fafb;' if idx % 2 == 1 else 'background: white;'
+                html_table += f'<tr style="{row_style}" onmouseover="this.style.background=\'#e5e7eb\'" onmouseout="this.style.background=\'{row_style.split(\':\')[1].strip()[:-1]}\'">'
+                for val in row:
+                    # จัดการค่า None/NaN
+                    display_val = str(val) if pd.notna(val) else '-'
+                    html_table += f'<td style="padding: 0.75rem; border-bottom: 1px solid #e5e7eb; font-family: \'Noto Sans Thai\', sans-serif;">{display_val}</td>'
+                html_table += '</tr>'
+            html_table += '</tbody></table>'
+            
+            # แสดง HTML table
+            st.markdown(html_table, unsafe_allow_html=True)
+            
+            # แสดงสถิติพื้นฐานในรูปแบบ card
+            st.markdown('<div style="margin-top: 1.5rem;">', unsafe_allow_html=True)
             col1, col2, col3 = st.columns(3)
+            
             with col1:
-                st.metric("จำนวนแถว", len(df))
+                st.markdown(f"""
+                <div class="stat-card">
+                    <div class="stat-label">จำนวนแถว</div>
+                    <div class="stat-number">{len(df):,}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
             with col2:
-                st.metric("จำนวนคอลัมน์", len(df.columns))
+                st.markdown(f"""
+                <div class="stat-card">
+                    <div class="stat-label">จำนวนคอลัมน์</div>
+                    <div class="stat-number">{len(df.columns)}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
             with col3:
-                st.metric("ขนาดข้อมูล", f"{df.memory_usage(deep=True).sum() / 1024:.1f} KB")
+                memory_kb = df.memory_usage(deep=True).sum() / 1024
+                st.markdown(f"""
+                <div class="stat-card">
+                    <div class="stat-label">ขนาดข้อมูล</div>
+                    <div class="stat-number">{memory_kb:.1f} KB</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            # เพิ่มปุ่ม download CSV
+            csv = df.to_csv(index=False).encode('utf-8-sig')
+            st.download_button(
+                label="📥 ดาวน์โหลด CSV",
+                data=csv,
+                file_name=f"data_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                mime="text/csv",
+            )
                 
         elif isinstance(data, dict):
             st.markdown("**📊 ผลลัพธ์:**")
-            st.json(data)
+            # แสดง dict ในรูป JSON ที่สวยงาม
+            json_str = json.dumps(data, indent=2, ensure_ascii=False)
+            st.markdown(f'<pre style="background: #f1f5f9; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; font-family: \'Courier New\', monospace;">{json_str}</pre>', unsafe_allow_html=True)
         else:
             st.markdown("**📊 ผลลัพธ์:**")
             st.write(data)
